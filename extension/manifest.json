@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "AuroraWrite",
+  "version": "1.0.0",
+  "description": "Your personal AI writing assistant — fast, private, and professional.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://api.groq.com/*"
+  ],
+  "background": {
+    "service_worker": "background/worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/observer.js"],
+      "css": ["content/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options/options.html",
+  "icons": {
+    "16": "icon16.svg",
+    "48": "icon48.svg",
+    "128": "icon128.svg"
+  },
+  "action": {
+    "default_popup": "options/options.html"
+  }
+}

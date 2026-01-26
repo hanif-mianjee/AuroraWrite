@@ -1,0 +1,160 @@
+/* AuroraWrite Overlay Styles */
+
+/* Underlines */
+.aurora-write-underline {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.aurora-write-underline:hover {
+  opacity: 0.8;
+}
+
+.aurora-write-grammar {
+  text-decoration-color: #ff4444;
+}
+
+.aurora-write-spelling {
+  text-decoration-color: #4444ff;
+}
+
+.aurora-write-punctuation {
+  text-decoration-color: #ffcc00;
+}
+
+.aurora-write-style {
+  text-decoration-color: #aa44ff;
+}
+
+/* Overlay container */
+.aurora-write-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9999;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.aurora-write-overlay span {
+  pointer-events: all;
+}
+
+/* Popover */
+.aurora-write-popover {
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  min-width: 200px;
+  max-width: 300px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  pointer-events: all;
+}
+
+.aurora-write-popover-category {
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.aurora-write-popover-original {
+  text-decoration: line-through;
+  color: #666;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.aurora-write-popover-replacement {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.aurora-write-popover-replacement:hover {
+  background-color: #e8f4f8;
+}
+
+.aurora-write-popover-replacement:last-child {
+  margin-bottom: 0;
+}
+
+/* Error Badge */
+.aurora-write-badge {
+  position: absolute;
+  display: flex;
+  gap: 6px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 6px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.aurora-write-badge-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  color: white;
+  font-weight: bold;
+  padding: 0 6px;
+}
+
+.aurora-write-badge-grammar {
+  background-color: #ff4444;
+}
+
+.aurora-write-badge-spelling {
+  background-color: #4444ff;
+}
+
+.aurora-write-badge-punctuation {
+  background-color: #ffcc00;
+  color: #333;
+}
+
+.aurora-write-badge-style {
+  background-color: #aa44ff;
+}
+
+/* Smooth animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aurora-write-popover {
+  animation: fadeIn 0.2s ease;
+}
+
+.aurora-write-badge {
+  animation: fadeIn 0.3s ease;
+}

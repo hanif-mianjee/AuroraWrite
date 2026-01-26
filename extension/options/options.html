@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuroraWrite Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ AuroraWrite</h1>
+      <p class="subtitle">Your personal AI writing assistant — fast, private, and professional.</p>
+    </header>
+    
+    <main>
+      <section class="section">
+        <h2>LLM Provider</h2>
+        <div class="form-group">
+          <label for="provider">Select Provider</label>
+          <select id="provider" class="input">
+            <option value="mock">Mock (Offline/Testing)</option>
+            <option value="groq">Groq</option>
+          </select>
+          <p class="help-text">Choose your LLM provider. Mock is for testing without API calls.</p>
+        </div>
+        
+        <div class="form-group" id="apiKeyGroup">
+          <label for="apiKey">API Key</label>
+          <input type="password" id="apiKey" class="input" placeholder="Enter your API key">
+          <p class="help-text">Your API key is stored locally and never sent to any server except the LLM provider.</p>
+        </div>
+        
+        <div class="form-group" id="modelGroup">
+          <label for="modelName">Model Name</label>
+          <input type="text" id="modelName" class="input" placeholder="mixtral-8x7b-32768">
+          <p class="help-text">For Groq: mixtral-8x7b-32768, llama2-70b-4096, etc.</p>
+        </div>
+      </section>
+      
+      <section class="section">
+        <h2>Performance</h2>
+        <div class="form-group">
+          <label for="debounceMs">Debounce Delay (ms)</label>
+          <input type="number" id="debounceMs" class="input" min="500" max="5000" step="100" value="1000">
+          <p class="help-text">Time to wait after typing stops before analyzing (default: 1000ms)</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="maxLength">Max Text Length</label>
+          <input type="number" id="maxLength" class="input" min="500" max="10000" step="100" value="3000">
+          <p class="help-text">Maximum characters to analyze (default: 3000)</p>
+        </div>
+      </section>
+      
+      <section class="section">
+        <h2>Developer Options</h2>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="devMode">
+            <span>Enable Developer Mode</span>
+          </label>
+          <p class="help-text">Show request/response logs and debugging information in console</p>
+        </div>
+      </section>
+      
+      <div class="actions">
+        <button id="saveBtn" class="btn btn-primary">Save Settings</button>
+        <button id="clearCacheBtn" class="btn btn-secondary">Clear Cache</button>
+      </div>
+      
+      <div id="status" class="status"></div>
+    </main>
+    
+    <footer>
+      <p>AuroraWrite v1.0.0 | <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank">GitHub</a></p>
+    </footer>
+  </div>
+  
+  <script type="module" src="options.js"></script>
+</body>
+</html>
