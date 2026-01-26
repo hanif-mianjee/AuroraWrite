@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuroraWrite Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 40px;
+    }
+    
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .test-section h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 10px;
+    }
+    
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    
+    .contenteditable {
+      width: 100%;
+      min-height: 100px;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      font-size: 14px;
+    }
+    
+    .sample-text {
+      background: #f9f9f9;
+      padding: 10px;
+      border-left: 3px solid #667eea;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .instructions {
+      background: #e8f4f8;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+    }
+    
+    .instructions ol {
+      margin: 10px 0 0 20px;
+    }
+    
+    .instructions li {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌟 AuroraWrite Test Page</h1>
+  <p class="subtitle">Test the writing assistant extension with various input types</p>
+  
+  <div class="instructions">
+    <strong>Instructions:</strong>
+    <ol>
+      <li>Make sure AuroraWrite extension is installed and configured</li>
+      <li>Type in any field below and pause for 1 second</li>
+      <li>Look for colored underlines indicating suggestions</li>
+      <li>Hover over underlines to see replacement options</li>
+      <li>Click a suggestion to apply it</li>
+    </ol>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 1: Textarea</h2>
+    <textarea placeholder="Type here... Try: 'He has went to the store yesterday'"></textarea>
+    <div class="sample-text">
+      Sample with errors: "I recieve your email. The book was wrote by me. Hello world"
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 2: Text Input</h2>
+    <input type="text" placeholder="Type here... Try: 'He has went home'">
+    <div class="sample-text">
+      Sample with errors: "She don't like it"
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 3: ContentEditable</h2>
+    <div class="contenteditable" contenteditable="true">Type or paste text here...</div>
+    <div class="sample-text">
+      Sample with errors: "The report was completed by the team. It occured yesterday."
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 4: Multiple Errors</h2>
+    <textarea placeholder="Type a longer text with multiple errors...">The meeting was went well yesterday. I definately recieve the documents you sended me last week The presentation is completed by our team</textarea>
+    <div class="sample-text">
+      This textarea has pre-filled text with multiple errors to test batch suggestions.
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 5: Clean Text (No Errors)</h2>
+    <textarea placeholder="Type clean text...">This is a perfectly written sentence with no errors.</textarea>
+    <div class="sample-text">
+      This should show no suggestions if the text is correct.
+    </div>
+  </div>
+  
+  <footer style="text-align: center; margin-top: 50px; color: #999; font-size: 14px;">
+    AuroraWrite Test Page | Check browser console for debug logs
+  </footer>
+</body>
+</html>

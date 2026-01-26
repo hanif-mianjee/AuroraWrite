@@ -1,5 +1,8 @@
 // Cache manager for content script
-export class TextCache {
+(function() {
+  'use strict';
+  
+  window.TextCache = class TextCache {
   constructor() {
     this.cache = new Map();
   }
@@ -95,4 +98,5 @@ export class TextCache {
       }
     }
   }
-}
+};
+})();

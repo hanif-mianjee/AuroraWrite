@@ -1,7 +1,16 @@
 // Overlay renderer for suggestions
-import { CONSTANTS } from '../shared/constants.js';
-
-export class OverlayRenderer {
+(function() {
+  'use strict';
+  
+  // Constants (inline for content script)
+  const COLORS = {
+    grammar: '#ff4444',
+    spelling: '#4444ff',
+    punctuation: '#ffcc00',
+    style: '#aa44ff'
+  };
+  
+  window.OverlayRenderer = class OverlayRenderer {
   constructor() {
     this.overlays = new Map();
     this.popovers = new Map();
@@ -65,7 +74,7 @@ export class OverlayRenderer {
     marker.className = `aurora-write-underline aurora-write-${category}`;
     marker.dataset.suggestionId = suggestion.id;
     marker.style.textDecoration = 'underline';
-    marker.style.textDecorationColor = CONSTANTS.COLORS[category];
+    marker.style.textDecorationColor = COLORS[category];
     marker.style.textDecorationThickness = '3px';
     marker.style.textUnderlineOffset = '3px';
     marker.style.cursor = 'pointer';
@@ -107,7 +116,7 @@ export class OverlayRenderer {
     underline.className = `aurora-write-underline aurora-write-${category}`;
     underline.dataset.suggestionId = suggestion.id;
     underline.textContent = text.substring(start, end);
-    underline.style.borderBottom = `3px solid ${CONSTANTS.COLORS[category]}`;
+    underline.style.borderBottom = `3px solid ${COLORS[category]}`;
     underline.style.cursor = 'pointer';
     underline.style.position = 'relative';
     
@@ -165,7 +174,7 @@ export class OverlayRenderer {
     const category = document.createElement('div');
     category.className = 'aurora-write-popover-category';
     category.textContent = suggestion.category.charAt(0).toUpperCase() + suggestion.category.slice(1);
-    category.style.color = CONSTANTS.COLORS[suggestion.category];
+    category.style.color = COLORS[suggestion.category];
     category.style.fontWeight = 'bold';
     category.style.marginBottom = '8px';
     
@@ -290,7 +299,7 @@ export class OverlayRenderer {
         const item = document.createElement('span');
         item.className = `aurora-write-badge-item aurora-write-badge-${category}`;
         item.textContent = count;
-        item.style.backgroundColor = CONSTANTS.COLORS[category];
+        item.style.backgroundColor = COLORS[category];
         badge.appendChild(item);
       }
     });
@@ -340,4 +349,5 @@ export class OverlayRenderer {
     }
     return element.__auroraWriteId;
   }
-}
+};
+})();

@@ -1,10 +1,10 @@
 // Main content script - Input observer
-import { TextCache } from './cache.js';
-import { OverlayRenderer } from './renderer.js';
-
-// Initialize cache and renderer
-const cache = new TextCache();
-const renderer = new OverlayRenderer();
+(function() {
+  'use strict';
+  
+  // Initialize cache and renderer (from global scope)
+  const cache = new window.TextCache();
+  const renderer = new window.OverlayRenderer();
 
 // Configuration
 let config = {
@@ -252,3 +252,4 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+})();
