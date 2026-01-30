@@ -15,6 +15,7 @@ class AuroraWrite {
   private widget: FloatingWidget;
   private popover: SuggestionPopover;
   private activeFieldId: string | null = null;
+  private lastActiveFieldId: string | null = null;
   private pendingAnalysis: Map<string, AbortController> = new Map();
   private handlers: Map<string, TextareaHandler | ContentEditableHandler> = new Map();
 
@@ -67,6 +68,7 @@ class AuroraWrite {
   private onFieldFocus(field: TextFieldInfo): void {
     console.log('[AuroraWrite] Field focused:', field.id);
     this.activeFieldId = field.id;
+    this.lastActiveFieldId = field.id;
     const issues = this.overlayManager.getIssuesForField(field.id);
     this.widget.show(field.element, issues);
 
@@ -82,8 +84,13 @@ class AuroraWrite {
 
   private onFieldBlur(field: TextFieldInfo): void {
     setTimeout(() => {
+      // Don't hide if user is interacting with the widget or popover is visible
+      if (this.widget.isUserInteracting() || this.popover.isVisible()) {
+        return;
+      }
       if (this.activeFieldId === field.id) {
         this.widget.hide();
+        this.activeFieldId = null;
       }
     }, 200);
   }
@@ -224,25 +231,31 @@ class AuroraWrite {
   }
 
   private acceptSuggestion(issue: TextIssue): void {
-    if (!this.activeFieldId) return;
+    const fieldId = this.activeFieldId || this.lastActiveFieldId;
+    console.log('[AuroraWrite] acceptSuggestion called, fieldId:', fieldId);
+    if (!fieldId) {
+      console.log('[AuroraWrite] No field ID for accept');
+      return;
+    }
 
-    this.overlayManager.replaceText(this.activeFieldId, issue);
+    this.overlayManager.replaceText(fieldId, issue);
 
-    const field = this.detector.getFieldById(this.activeFieldId);
+    const field = this.detector.getFieldById(fieldId);
     if (field) {
       setTimeout(() => this.analyzeField(field), 100);
     }
   }
 
   private ignoreIssue(issue: TextIssue): void {
-    console.log('[AuroraWrite] ignoreIssue called:', issue.id, 'activeFieldId:', this.activeFieldId);
-    if (!this.activeFieldId) {
-      console.log('[AuroraWrite] No active field, cannot ignore');
+    const fieldId = this.activeFieldId || this.lastActiveFieldId;
+    console.log('[AuroraWrite] ignoreIssue called:', issue.id, 'fieldId:', fieldId);
+    if (!fieldId) {
+      console.log('[AuroraWrite] No field ID, cannot ignore');
       return;
     }
 
-    this.overlayManager.ignoreIssue(this.activeFieldId, issue.id);
-    const updatedIssues = this.overlayManager.getIssuesForField(this.activeFieldId);
+    this.overlayManager.ignoreIssue(fieldId, issue.id);
+    const updatedIssues = this.overlayManager.getIssuesForField(fieldId);
     console.log('[AuroraWrite] Updated issues after ignore:', updatedIssues.map(i => ({ id: i.id, ignored: i.ignored })));
     this.widget.update(updatedIssues);
   }

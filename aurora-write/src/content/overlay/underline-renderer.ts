@@ -69,17 +69,20 @@ export class UnderlineRenderer {
       const left = rect.left - containerRect.left;
       const top = rect.top - containerRect.top + rect.height - 3;
 
+      // Dynamic max width based on container width
+      const maxWidth = Math.min(rect.width, containerRect.width * 0.9);
+
       segment.style.cssText = `
         position: absolute;
         left: ${left}px;
         top: ${top}px;
-        width: ${rect.width}px;
-        height: 4px;
+        width: ${maxWidth}px;
+        height: 3px;
         pointer-events: auto;
         cursor: pointer;
         background: ${config.color};
-        border-radius: 2px;
-        opacity: 0.85;
+        border-radius: 1px;
+        opacity: 0.65;
       `;
 
       // Add direct click handler to segment

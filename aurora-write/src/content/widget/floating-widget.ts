@@ -10,9 +10,14 @@ export class FloatingWidget {
   private currentFieldElement: HTMLElement | null = null;
   private state: WidgetState = 'hidden';
   private onCategoryClick: ((category: IssueCategory) => void) | null = null;
+  private isInteracting = false;
 
   setOnCategoryClick(callback: (category: IssueCategory) => void): void {
     this.onCategoryClick = callback;
+  }
+
+  isUserInteracting(): boolean {
+    return this.isInteracting;
   }
 
   show(fieldElement: HTMLElement, issues: TextIssue[]): void {
@@ -73,6 +78,18 @@ export class FloatingWidget {
     this.positionWidget(fieldElement);
     document.body.appendChild(this.widget);
 
+    // Track mouse interactions to prevent blur from hiding widget
+    this.widget.addEventListener('mouseenter', () => {
+      this.isInteracting = true;
+    });
+    this.widget.addEventListener('mouseleave', () => {
+      this.isInteracting = false;
+    });
+    this.widget.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      this.isInteracting = true;
+    });
+
     if (state === 'issues' && counts) {
       this.setupWidgetEvents(content);
     }
@@ -101,16 +118,18 @@ export class FloatingWidget {
     return `
       * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
       .aurora-widget {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 13px;
-        background: #1a1a2e;
-        color: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        background: #ffffff;
+        color: #374151;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.08);
         min-width: 48px;
-        cursor: pointer;
         user-select: none;
         overflow: hidden;
       }
@@ -118,11 +137,16 @@ export class FloatingWidget {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 10px 14px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .aurora-widget-header:hover {
+        background: #f9fafb;
       }
       .aurora-logo {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         background: linear-gradient(135deg, #6366f1, #8b5cf6);
         border-radius: 6px;
         display: flex;
@@ -130,30 +154,37 @@ export class FloatingWidget {
         justify-content: center;
         font-weight: bold;
         font-size: 12px;
+        color: white;
       }
       .aurora-title {
         font-weight: 600;
         font-size: 13px;
-        flex: 1;
+        color: #111827;
       }
       .aurora-total {
-        background: rgba(255,255,255,0.15);
+        background: #fee2e2;
+        color: #dc2626;
         padding: 2px 8px;
         border-radius: 10px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
+      }
+      .aurora-total.clean {
+        background: #d1fae5;
+        color: #059669;
       }
       .aurora-expand-icon {
         font-size: 10px;
-        opacity: 0.6;
+        color: #9ca3af;
         transition: transform 0.2s;
+        margin-left: auto;
       }
       .aurora-widget.expanded .aurora-expand-icon {
         transform: rotate(180deg);
       }
       .aurora-categories {
         display: none;
-        padding: 0 8px 8px;
+        border-top: 1px solid #f3f4f6;
       }
       .aurora-widget.expanded .aurora-categories {
         display: block;
@@ -162,39 +193,42 @@ export class FloatingWidget {
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 8px 10px;
-        border-radius: 8px;
+        padding: 10px 12px;
         cursor: pointer;
         transition: background 0.15s;
       }
       .aurora-category-row:hover {
-        background: rgba(255,255,255,0.1);
+        background: #f9fafb;
       }
       .aurora-category-bar {
-        width: 4px;
-        height: 18px;
+        width: 3px;
+        height: 16px;
         border-radius: 2px;
       }
       .aurora-category-name {
         flex: 1;
         font-size: 13px;
-        opacity: 0.9;
+        color: #4b5563;
       }
       .aurora-category-count {
         font-weight: 600;
-        font-size: 13px;
+        font-size: 12px;
+        padding: 1px 6px;
+        border-radius: 8px;
+        background: #f3f4f6;
       }
       .aurora-loading {
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 10px 14px;
+        padding: 10px 12px;
+        color: #6b7280;
       }
       .aurora-spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255,255,255,0.2);
-        border-top-color: #8b5cf6;
+        width: 14px;
+        height: 14px;
+        border: 2px solid #e5e7eb;
+        border-top-color: #6366f1;
         border-radius: 50%;
         animation: aurora-spin 0.8s linear infinite;
       }
@@ -204,23 +238,23 @@ export class FloatingWidget {
       .aurora-clean {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        color: #4ade80;
+        gap: 8px;
+        padding: 10px 12px;
+        color: #059669;
       }
       .aurora-check {
-        font-size: 16px;
+        font-size: 14px;
       }
       .aurora-error {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        color: #f87171;
+        gap: 8px;
+        padding: 10px 12px;
+        color: #dc2626;
         max-width: 220px;
       }
       .aurora-error-icon {
-        font-size: 16px;
+        font-size: 14px;
       }
       .aurora-error-text {
         font-size: 12px;
@@ -252,7 +286,7 @@ export class FloatingWidget {
       return `
         <div class="aurora-clean">
           <span class="aurora-check">✓</span>
-          <span>Looking good!</span>
+          <span>All good</span>
         </div>
       `;
     }
@@ -274,7 +308,7 @@ export class FloatingWidget {
       <div class="aurora-widget-header">
         <div class="aurora-logo">A</div>
         <span class="aurora-title">Aurora</span>
-        <span class="aurora-total">${counts.total}</span>
+        <span class="aurora-total">${counts.total} issue${counts.total > 1 ? 's' : ''}</span>
         <span class="aurora-expand-icon">▼</span>
       </div>
       <div class="aurora-categories">
@@ -286,7 +320,8 @@ export class FloatingWidget {
   private setupWidgetEvents(content: HTMLElement): void {
     const header = content.querySelector('.aurora-widget-header');
     if (header) {
-      header.addEventListener('click', () => {
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
         this.isExpanded = !this.isExpanded;
         content.classList.toggle('expanded', this.isExpanded);
       });
