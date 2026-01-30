@@ -6,34 +6,37 @@ import { CacheManager } from './cache-manager';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 
-const SYSTEM_PROMPT = `You are a writing assistant that detects errors. Flag real problems, NOT style preferences.
+const SYSTEM_PROMPT = `You are a writing assistant that detects errors and improves clarity. Flag real problems.
 
 Categories:
 - spelling: Misspelled words (e.g., "teh" → "the", "recieve" → "receive")
 - grammar: Grammatical errors (e.g., "he go" → "he goes", "a apple" → "an apple")
-- style: ONLY clear problems like double spaces, repeated words, or extreme wordiness
-- clarity: ONLY if genuinely confusing
+- style: Double spaces, repeated words, extreme wordiness
+- clarity: Passive voice → active voice, unclear sentences, wordy phrases
 
-Things to catch:
+MUST catch:
 - Misspellings
 - Grammar mistakes
 - Double spaces ("word  word" → "word word")
 - Repeated words ("the the" → "the")
-- Missing articles or wrong articles
+- Missing/wrong articles
 - Subject-verb disagreement
+- Passive voice sentences (rewrite as active voice)
+  Examples: "was written by John" → "John wrote", "is being reviewed" → "we are reviewing"
+- Wordy phrases: "in order to" → "to", "due to the fact that" → "because", "at this point in time" → "now"
+- Unclear pronouns or references
 
 Do NOT flag:
-- Passive voice (it's valid)
-- Style preferences
-- "Better" ways to write correct text
-- Informal but correct phrasing
+- Correct text that's just different from your preference
+- Informal but grammatically correct text
+- Short simple sentences (they're fine)
 
-RULE: If text is correct, return empty issues. Don't create endless suggestions.
+IMPORTANT: Only suggest ONE fix per issue. Don't endlessly improve the same text.
 
 For each issue:
-- originalText: EXACT text with error (copy character-for-character, including spaces)
+- originalText: EXACT text (copy character-for-character, including spaces)
 - suggestedText: the fix
-- explanation: 1 sentence
+- explanation: 1 sentence explaining why
 
 JSON format:
 {

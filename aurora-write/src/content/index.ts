@@ -98,7 +98,7 @@ class AuroraWrite {
   private createInputHandler(field: TextFieldInfo): () => void {
     const debouncedAnalyze = debounce(() => {
       this.analyzeField(field);
-    }, 500);
+    }, 2000); // 2 second debounce to reduce API calls
 
     return debouncedAnalyze;
   }
@@ -238,12 +238,19 @@ class AuroraWrite {
       return;
     }
 
+    // Remove the issue from overlay IMMEDIATELY (before text replacement)
+    // This removes the underline instantly
+    this.overlayManager.removeIssue(fieldId, issue.id);
+    this.popover.hide();
+
+    // Now replace the text
     this.overlayManager.replaceText(fieldId, issue);
 
-    const field = this.detector.getFieldById(fieldId);
-    if (field) {
-      setTimeout(() => this.analyzeField(field), 100);
-    }
+    // Update widget with remaining issues
+    const remainingIssues = this.overlayManager.getIssuesForField(fieldId);
+    this.widget.update(remainingIssues);
+
+    // Don't manually re-analyze - the input event will trigger the debounced analysis
   }
 
   private ignoreIssue(issue: TextIssue): void {
@@ -254,26 +261,37 @@ class AuroraWrite {
       return;
     }
 
-    this.overlayManager.ignoreIssue(fieldId, issue.id);
+    // Hide popover first
+    this.popover.hide();
+
+    // Remove the issue from overlay (removes underline immediately)
+    this.overlayManager.removeIssue(fieldId, issue.id);
+
+    // Update widget with remaining issues
     const updatedIssues = this.overlayManager.getIssuesForField(fieldId);
-    console.log('[AuroraWrite] Updated issues after ignore:', updatedIssues.map(i => ({ id: i.id, ignored: i.ignored })));
     this.widget.update(updatedIssues);
   }
 
   private async ignoreAllSimilar(issue: TextIssue): Promise<void> {
+    // Hide popover first
+    this.popover.hide();
+
     await addIgnoredWord(issue.originalText);
 
+    // Remove all similar issues from all fields (removes underlines immediately)
     for (const field of this.detector.getAllFields()) {
       const issues = this.overlayManager.getIssuesForField(field.id);
       for (const i of issues) {
         if (i.originalText.toLowerCase() === issue.originalText.toLowerCase()) {
-          this.overlayManager.ignoreIssue(field.id, i.id);
+          this.overlayManager.removeIssue(field.id, i.id);
         }
       }
     }
 
-    if (this.activeFieldId) {
-      this.widget.update(this.overlayManager.getIssuesForField(this.activeFieldId));
+    // Update widget with remaining issues
+    const fieldId = this.activeFieldId || this.lastActiveFieldId;
+    if (fieldId) {
+      this.widget.update(this.overlayManager.getIssuesForField(fieldId));
     }
   }
 

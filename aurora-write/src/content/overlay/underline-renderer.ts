@@ -69,14 +69,20 @@ export class UnderlineRenderer {
       const left = rect.left - containerRect.left;
       const top = rect.top - containerRect.top + rect.height - 3;
 
-      // Dynamic max width based on container width
-      const maxWidth = Math.min(rect.width, containerRect.width * 0.9);
+      // Cap width to not extend beyond container
+      const availableWidth = containerRect.width - left - 5;
+      const width = Math.max(10, Math.min(rect.width, availableWidth));
+
+      // Skip if position is outside container
+      if (left < 0 || left > containerRect.width || top < 0) {
+        continue;
+      }
 
       segment.style.cssText = `
         position: absolute;
-        left: ${left}px;
+        left: ${Math.max(0, left)}px;
         top: ${top}px;
-        width: ${maxWidth}px;
+        width: ${width}px;
         height: 3px;
         pointer-events: auto;
         cursor: pointer;

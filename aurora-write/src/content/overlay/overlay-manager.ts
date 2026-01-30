@@ -182,6 +182,14 @@ export class OverlayManager {
     }
   }
 
+  removeIssue(fieldId: string, issueId: string): void {
+    const overlay = this.overlays.get(fieldId);
+    if (!overlay) return;
+
+    overlay.issues = overlay.issues.filter(i => i.id !== issueId);
+    this.updateUnderlines(overlay);
+  }
+
   removeOverlay(fieldId: string): void {
     const overlay = this.overlays.get(fieldId);
     if (!overlay) return;

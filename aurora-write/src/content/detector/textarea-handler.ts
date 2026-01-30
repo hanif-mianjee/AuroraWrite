@@ -78,20 +78,40 @@ export class TextareaHandler {
     const textareaRect = this.textarea.getBoundingClientRect();
     const mirrorRect = mirror.getBoundingClientRect();
 
-    const targetRect = targetSpan.getBoundingClientRect();
-
     const scrollTop = this.textarea.scrollTop;
     const scrollLeft = this.textarea.scrollLeft;
 
-    const adjustedRect = new DOMRect(
-      textareaRect.left + (targetRect.left - mirrorRect.left) - scrollLeft,
-      textareaRect.top + (targetRect.top - mirrorRect.top) - scrollTop,
-      targetRect.width,
-      targetRect.height
-    );
+    // Use getClientRects() to get individual line rects for wrapped text
+    const clientRects = targetSpan.getClientRects();
+    const rects: DOMRect[] = [];
+
+    for (let i = 0; i < clientRects.length; i++) {
+      const rect = clientRects[i];
+      // Limit width to not exceed textarea bounds
+      const maxWidth = textareaRect.width - (rect.left - mirrorRect.left) - 10;
+      const adjustedRect = new DOMRect(
+        textareaRect.left + (rect.left - mirrorRect.left) - scrollLeft,
+        textareaRect.top + (rect.top - mirrorRect.top) - scrollTop,
+        Math.min(rect.width, maxWidth),
+        rect.height
+      );
+      rects.push(adjustedRect);
+    }
+
+    // Fallback if no rects found
+    if (rects.length === 0) {
+      const targetRect = targetSpan.getBoundingClientRect();
+      const maxWidth = textareaRect.width - (targetRect.left - mirrorRect.left) - 10;
+      rects.push(new DOMRect(
+        textareaRect.left + (targetRect.left - mirrorRect.left) - scrollLeft,
+        textareaRect.top + (targetRect.top - mirrorRect.top) - scrollTop,
+        Math.min(targetRect.width, maxWidth),
+        targetRect.height
+      ));
+    }
 
     return {
-      rects: [adjustedRect],
+      rects,
       startOffset,
       endOffset,
     };
