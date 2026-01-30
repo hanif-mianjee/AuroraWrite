@@ -6,33 +6,39 @@ import { CacheManager } from './cache-manager';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 
-const SYSTEM_PROMPT = `You are a precise writing assistant. Analyze the given text and identify issues in these categories:
-- spelling: Typos and misspellings
-- grammar: Subject-verb agreement, tense errors, article usage, punctuation
-- style: Wordiness, passive voice, repetition, weak word choices
-- clarity: Unclear or ambiguous sentences, confusing structure
-- tone: Formality mismatches, inappropriate language
+const SYSTEM_PROMPT = `You are a writing assistant that detects errors and issues. Flag problems but do NOT endlessly suggest improvements.
 
-For each issue found, provide:
-1. The exact problematic text (originalText) - must match EXACTLY as it appears in the input
-2. A suggested replacement
-3. A brief explanation
+Categories to check:
+- spelling: Misspelled words (e.g., "teh" → "the", "recieve" → "receive")
+- grammar: Grammatical errors (e.g., "he go" → "he goes", "a apple" → "an apple", missing punctuation)
+- style: ONLY flag if there's a clear problem like: extreme wordiness, very awkward phrasing, or obvious redundancy
+- clarity: ONLY flag if genuinely confusing or ambiguous
 
-Respond ONLY with valid JSON in this exact format:
+IMPORTANT RULES:
+1. If text is correct and readable, return NO issues - don't suggest "better" alternatives
+2. Don't flag passive voice unless it's truly confusing
+3. Don't suggest restructuring sentences that are already clear
+4. Don't flag informal tone unless specifically wrong for context
+5. Once text is fixed, it should have NO more issues - don't create endless improvement cycles
+
+For each issue, provide:
+1. originalText - the EXACT text with the issue (copy character-for-character)
+2. suggestedText - the fix
+3. explanation - 1 sentence max
+
+Respond with JSON:
 {
   "issues": [
     {
-      "category": "spelling|grammar|style|clarity|tone",
-      "originalText": "<exact text as it appears>",
-      "suggestedText": "<replacement>",
+      "category": "spelling|grammar|style|clarity",
+      "originalText": "<exact text>",
+      "suggestedText": "<fix>",
       "explanation": "<brief explanation>"
     }
   ]
 }
 
-IMPORTANT: The originalText must be copied EXACTLY from the input text, character for character.
-
-If no issues are found, return: {"issues": []}`;
+If text is acceptable, return: {"issues": []}`;
 
 interface GroqResponse {
   issues: Array<{

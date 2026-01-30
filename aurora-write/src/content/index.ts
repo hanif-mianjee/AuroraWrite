@@ -235,10 +235,16 @@ class AuroraWrite {
   }
 
   private ignoreIssue(issue: TextIssue): void {
-    if (!this.activeFieldId) return;
+    console.log('[AuroraWrite] ignoreIssue called:', issue.id, 'activeFieldId:', this.activeFieldId);
+    if (!this.activeFieldId) {
+      console.log('[AuroraWrite] No active field, cannot ignore');
+      return;
+    }
 
     this.overlayManager.ignoreIssue(this.activeFieldId, issue.id);
-    this.widget.update(this.overlayManager.getIssuesForField(this.activeFieldId));
+    const updatedIssues = this.overlayManager.getIssuesForField(this.activeFieldId);
+    console.log('[AuroraWrite] Updated issues after ignore:', updatedIssues.map(i => ({ id: i.id, ignored: i.ignored })));
+    this.widget.update(updatedIssues);
   }
 
   private async ignoreAllSimilar(issue: TextIssue): Promise<void> {

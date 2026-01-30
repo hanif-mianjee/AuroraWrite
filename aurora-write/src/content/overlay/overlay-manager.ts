@@ -164,13 +164,21 @@ export class OverlayManager {
   }
 
   ignoreIssue(fieldId: string, issueId: string): void {
+    console.log('[AuroraWrite] OverlayManager.ignoreIssue:', fieldId, issueId);
     const overlay = this.overlays.get(fieldId);
-    if (!overlay) return;
+    if (!overlay) {
+      console.log('[AuroraWrite] Overlay not found for field:', fieldId);
+      return;
+    }
 
+    console.log('[AuroraWrite] Issues in overlay:', overlay.issues.map(i => i.id));
     const issue = overlay.issues.find((i) => i.id === issueId);
     if (issue) {
+      console.log('[AuroraWrite] Found issue, setting ignored=true');
       issue.ignored = true;
       this.updateUnderlines(overlay);
+    } else {
+      console.log('[AuroraWrite] Issue not found with id:', issueId);
     }
   }
 

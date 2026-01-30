@@ -74,10 +74,12 @@ export class UnderlineRenderer {
         left: ${left}px;
         top: ${top}px;
         width: ${rect.width}px;
-        height: 3px;
+        height: 4px;
         pointer-events: auto;
         cursor: pointer;
-        ${this.getUnderlineStyle(config.underlineStyle, config.color)}
+        background: ${config.color};
+        border-radius: 2px;
+        opacity: 0.85;
       `;
 
       // Add direct click handler to segment

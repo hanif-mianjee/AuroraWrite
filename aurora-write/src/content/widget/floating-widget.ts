@@ -16,18 +16,21 @@ export class FloatingWidget {
   }
 
   show(fieldElement: HTMLElement, issues: TextIssue[]): void {
+    console.log('[AuroraWrite] Widget.show called, issues:', issues.length);
     this.currentFieldElement = fieldElement;
     const counts = this.calculateCounts(issues);
 
     if (counts.total === 0) {
-      // Show "all good" state
+      console.log('[AuroraWrite] Showing clean state');
       this.showClean(fieldElement);
     } else {
+      console.log('[AuroraWrite] Showing issues state:', counts);
       this.showIssues(fieldElement, counts);
     }
   }
 
   showLoading(fieldElement: HTMLElement): void {
+    console.log('[AuroraWrite] Widget.showLoading called');
     this.currentFieldElement = fieldElement;
     this.state = 'loading';
     this.hide();
@@ -82,92 +85,116 @@ export class FloatingWidget {
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
 
+    // Position at bottom-right corner of the field
+    const top = rect.bottom + scrollY - 48;
+    const left = rect.right + scrollX - 140;
+
     this.widget.style.cssText = `
       position: absolute;
-      top: ${rect.bottom + scrollY - 40}px;
-      left: ${rect.right + scrollX - 50}px;
+      top: ${Math.max(rect.top + scrollY + 8, top)}px;
+      left: ${Math.max(rect.left + scrollX + 8, left)}px;
       z-index: 2147483647;
     `;
   }
 
   private getStyles(): string {
     return `
+      * {
+        box-sizing: border-box;
+      }
       .aurora-widget {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 12px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-        padding: 8px 12px;
-        min-width: 40px;
+        font-size: 13px;
+        background: #1a1a2e;
+        color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        min-width: 48px;
         cursor: pointer;
         user-select: none;
-        transition: all 0.2s ease;
+        overflow: hidden;
       }
-      .aurora-widget:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-      }
-      .aurora-widget-collapsed {
+      .aurora-widget-header {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+        padding: 10px 14px;
       }
-      .aurora-widget-expanded {
-        display: none;
-      }
-      .aurora-widget.expanded .aurora-widget-collapsed {
-        display: none;
-      }
-      .aurora-widget.expanded .aurora-widget-expanded {
-        display: block;
-      }
-      .aurora-count-badge {
-        display: inline-flex;
+      .aurora-logo {
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border-radius: 6px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        min-width: 20px;
-        height: 20px;
-        border-radius: 10px;
-        color: white;
+        font-weight: bold;
+        font-size: 12px;
+      }
+      .aurora-title {
         font-weight: 600;
-        font-size: 11px;
-        padding: 0 6px;
+        font-size: 13px;
+        flex: 1;
+      }
+      .aurora-total {
+        background: rgba(255,255,255,0.15);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .aurora-expand-icon {
+        font-size: 10px;
+        opacity: 0.6;
+        transition: transform 0.2s;
+      }
+      .aurora-widget.expanded .aurora-expand-icon {
+        transform: rotate(180deg);
+      }
+      .aurora-categories {
+        display: none;
+        padding: 0 8px 8px;
+      }
+      .aurora-widget.expanded .aurora-categories {
+        display: block;
       }
       .aurora-category-row {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 6px 4px;
-        border-radius: 4px;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
         cursor: pointer;
+        transition: background 0.15s;
       }
       .aurora-category-row:hover {
-        background: #f5f5f5;
+        background: rgba(255,255,255,0.1);
       }
-      .aurora-category-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
+      .aurora-category-bar {
+        width: 4px;
+        height: 18px;
+        border-radius: 2px;
       }
       .aurora-category-name {
         flex: 1;
-        color: #333;
+        font-size: 13px;
+        opacity: 0.9;
       }
       .aurora-category-count {
-        color: #666;
-        font-weight: 500;
+        font-weight: 600;
+        font-size: 13px;
       }
       .aurora-loading {
         display: flex;
         align-items: center;
-        gap: 8px;
-        color: #666;
+        gap: 10px;
+        padding: 10px 14px;
       }
       .aurora-spinner {
-        width: 14px;
-        height: 14px;
-        border: 2px solid #e0e0e0;
-        border-top-color: #1976d2;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255,255,255,0.2);
+        border-top-color: #8b5cf6;
         border-radius: 50%;
         animation: aurora-spin 0.8s linear infinite;
       }
@@ -177,9 +204,9 @@ export class FloatingWidget {
       .aurora-clean {
         display: flex;
         align-items: center;
-        gap: 6px;
-        color: #4caf50;
-        font-weight: 500;
+        gap: 10px;
+        padding: 10px 14px;
+        color: #4ade80;
       }
       .aurora-check {
         font-size: 16px;
@@ -187,16 +214,16 @@ export class FloatingWidget {
       .aurora-error {
         display: flex;
         align-items: center;
-        gap: 6px;
-        color: #e53935;
-        font-weight: 500;
-        max-width: 200px;
+        gap: 10px;
+        padding: 10px 14px;
+        color: #f87171;
+        max-width: 220px;
       }
       .aurora-error-icon {
         font-size: 16px;
       }
       .aurora-error-text {
-        font-size: 11px;
+        font-size: 12px;
         line-height: 1.3;
       }
     `;
@@ -225,58 +252,54 @@ export class FloatingWidget {
       return `
         <div class="aurora-clean">
           <span class="aurora-check">✓</span>
-          <span>All good</span>
+          <span>Looking good!</span>
         </div>
       `;
     }
 
     if (!counts) return '';
 
-    const categoryBadges = ISSUE_CATEGORIES
-      .filter((cat) => counts[cat] > 0)
-      .map((cat) => `
-        <span class="aurora-count-badge" style="background: ${CATEGORY_CONFIG[cat].color}">
-          ${counts[cat]}
-        </span>
-      `)
-      .join('');
-
     const categoryRows = ISSUE_CATEGORIES
       .filter((cat) => counts[cat] > 0)
       .map((cat) => `
         <div class="aurora-category-row" data-category="${cat}">
-          <span class="aurora-category-dot" style="background: ${CATEGORY_CONFIG[cat].color}"></span>
+          <div class="aurora-category-bar" style="background: ${CATEGORY_CONFIG[cat].color}"></div>
           <span class="aurora-category-name">${CATEGORY_CONFIG[cat].name}</span>
-          <span class="aurora-category-count">${counts[cat]}</span>
+          <span class="aurora-category-count" style="color: ${CATEGORY_CONFIG[cat].color}">${counts[cat]}</span>
         </div>
       `)
       .join('');
 
     return `
-      <div class="aurora-widget-collapsed">
-        ${categoryBadges}
+      <div class="aurora-widget-header">
+        <div class="aurora-logo">A</div>
+        <span class="aurora-title">Aurora</span>
+        <span class="aurora-total">${counts.total}</span>
+        <span class="aurora-expand-icon">▼</span>
       </div>
-      <div class="aurora-widget-expanded">
+      <div class="aurora-categories">
         ${categoryRows}
       </div>
     `;
   }
 
   private setupWidgetEvents(content: HTMLElement): void {
-    content.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const categoryRow = target.closest('.aurora-category-row');
+    const header = content.querySelector('.aurora-widget-header');
+    if (header) {
+      header.addEventListener('click', () => {
+        this.isExpanded = !this.isExpanded;
+        content.classList.toggle('expanded', this.isExpanded);
+      });
+    }
 
-      if (categoryRow) {
-        const category = categoryRow.getAttribute('data-category') as IssueCategory;
+    content.querySelectorAll('.aurora-category-row').forEach((row) => {
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const category = (row as HTMLElement).getAttribute('data-category') as IssueCategory;
         if (category && this.onCategoryClick) {
           this.onCategoryClick(category);
         }
-        return;
-      }
-
-      this.isExpanded = !this.isExpanded;
-      content.classList.toggle('expanded', this.isExpanded);
+      });
     });
   }
 

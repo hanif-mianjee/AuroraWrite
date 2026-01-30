@@ -12,23 +12,29 @@ export class ContentEditableHandler {
   }
 
   getTextPositions(text: string, startOffset: number, endOffset: number): TextPosition {
+    console.log('[AuroraWrite] ContentEditable.getTextPositions:', startOffset, endOffset, 'text length:', text.length);
     const range = document.createRange();
 
     const { node: startNode, offset: startNodeOffset } = this.findTextPosition(startOffset);
     const { node: endNode, offset: endNodeOffset } = this.findTextPosition(endOffset);
 
+    console.log('[AuroraWrite] Found nodes:', { startNode: !!startNode, endNode: !!endNode });
+
     if (!startNode || !endNode) {
+      console.log('[AuroraWrite] Nodes not found');
       return { rects: [], startOffset, endOffset };
     }
 
     try {
       range.setStart(startNode, startNodeOffset);
       range.setEnd(endNode, endNodeOffset);
-    } catch {
+    } catch (e) {
+      console.log('[AuroraWrite] Range error:', e);
       return { rects: [], startOffset, endOffset };
     }
 
     const rects = Array.from(range.getClientRects());
+    console.log('[AuroraWrite] Got rects:', rects.length);
     return {
       rects: rects.length > 0 ? rects : [],
       startOffset,
