@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuroraWrite Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>AuroraWrite</h1>
+      <p class="subtitle">AI-Powered Writing Assistant</p>
+    </header>
+
+    <main class="main">
+      <!-- API Key Section -->
+      <section class="section">
+        <h2>API Configuration</h2>
+        <div class="form-group">
+          <label for="api-key">Groq API Key</label>
+          <div class="input-group">
+            <input type="password" id="api-key" placeholder="Enter your Groq API key">
+            <button type="button" id="toggle-visibility" class="btn btn-icon" title="Toggle visibility">
+              👁
+            </button>
+          </div>
+          <p class="help-text">
+            Get your API key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a>
+          </p>
+          <div id="api-status" class="status-badge hidden"></div>
+        </div>
+        <button type="button" id="save-api-key" class="btn btn-primary">Save API Key</button>
+      </section>
+
+      <!-- Categories Section -->
+      <section class="section">
+        <h2>Issue Categories</h2>
+        <p class="section-description">Enable or disable specific types of suggestions</p>
+
+        <div class="categories-list">
+          <div class="category-item" data-category="spelling">
+            <div class="category-header">
+              <span class="category-dot" style="background: #e53935"></span>
+              <span class="category-name">Spelling</span>
+              <label class="toggle">
+                <input type="checkbox" id="cat-spelling" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <p class="category-description">Typos and misspellings</p>
+            <div class="sensitivity-control">
+              <label>Sensitivity:</label>
+              <select id="sens-spelling">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high" selected>High</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="category-item" data-category="grammar">
+            <div class="category-header">
+              <span class="category-dot" style="background: #ff9800"></span>
+              <span class="category-name">Grammar</span>
+              <label class="toggle">
+                <input type="checkbox" id="cat-grammar" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <p class="category-description">Subject-verb agreement, tense, articles</p>
+            <div class="sensitivity-control">
+              <label>Sensitivity:</label>
+              <select id="sens-grammar">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high" selected>High</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="category-item" data-category="style">
+            <div class="category-header">
+              <span class="category-dot" style="background: #2196f3"></span>
+              <span class="category-name">Style</span>
+              <label class="toggle">
+                <input type="checkbox" id="cat-style" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <p class="category-description">Wordiness, passive voice, repetition</p>
+            <div class="sensitivity-control">
+              <label>Sensitivity:</label>
+              <select id="sens-style">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="category-item" data-category="clarity">
+            <div class="category-header">
+              <span class="category-dot" style="background: #9c27b0"></span>
+              <span class="category-name">Clarity</span>
+              <label class="toggle">
+                <input type="checkbox" id="cat-clarity" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <p class="category-description">Unclear or ambiguous sentences</p>
+            <div class="sensitivity-control">
+              <label>Sensitivity:</label>
+              <select id="sens-clarity">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="category-item" data-category="tone">
+            <div class="category-header">
+              <span class="category-dot" style="background: #4caf50"></span>
+              <span class="category-name">Tone</span>
+              <label class="toggle">
+                <input type="checkbox" id="cat-tone">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <p class="category-description">Formality mismatches</p>
+            <div class="sensitivity-control">
+              <label>Sensitivity:</label>
+              <select id="sens-tone">
+                <option value="low" selected>Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ignored Words Section -->
+      <section class="section">
+        <h2>Ignored Words</h2>
+        <p class="section-description">Words that won't be flagged as spelling errors</p>
+
+        <div class="form-group">
+          <div class="input-group">
+            <input type="text" id="new-word" placeholder="Add a word to ignore">
+            <button type="button" id="add-word" class="btn btn-secondary">Add</button>
+          </div>
+        </div>
+
+        <div id="ignored-words-list" class="tags-list">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- Save Button -->
+      <div class="actions">
+        <button type="button" id="save-settings" class="btn btn-primary btn-large">Save All Settings</button>
+        <span id="save-status" class="save-status hidden">Settings saved!</span>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>AuroraWrite v1.0.0 • Powered by Groq</p>
+    </footer>
+  </div>
+
+  <script type="module" src="options.ts"></script>
+</body>
+</html>

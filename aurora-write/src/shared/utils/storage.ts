@@ -1,0 +1,57 @@
+import { DEFAULT_SETTINGS, type Settings } from '../types/settings';
+
+const STORAGE_KEY = 'aurora_write_settings';
+
+export async function getSettings(): Promise<Settings> {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get([STORAGE_KEY], (result) => {
+      const stored = result[STORAGE_KEY];
+      if (stored) {
+        resolve({ ...DEFAULT_SETTINGS, ...stored });
+      } else {
+        resolve(DEFAULT_SETTINGS);
+      }
+    });
+  });
+}
+
+export async function saveSettings(settings: Partial<Settings>): Promise<void> {
+  const current = await getSettings();
+  const updated = { ...current, ...settings };
+
+  return new Promise((resolve) => {
+    chrome.storage.sync.set({ [STORAGE_KEY]: updated }, () => {
+      resolve();
+    });
+  });
+}
+
+export async function getApiKey(): Promise<string> {
+  const settings = await getSettings();
+  return settings.apiKey;
+}
+
+export async function saveApiKey(apiKey: string): Promise<void> {
+  await saveSettings({ apiKey });
+}
+
+export async function getIgnoredWords(): Promise<string[]> {
+  const settings = await getSettings();
+  return settings.ignoredWords;
+}
+
+export async function addIgnoredWord(word: string): Promise<void> {
+  const settings = await getSettings();
+  if (!settings.ignoredWords.includes(word.toLowerCase())) {
+    settings.ignoredWords.push(word.toLowerCase());
+    await saveSettings({ ignoredWords: settings.ignoredWords });
+  }
+}
+
+export async function removeIgnoredWord(word: string): Promise<void> {
+  const settings = await getSettings();
+  settings.ignoredWords = settings.ignoredWords.filter(
+    (w) => w !== word.toLowerCase()
+  );
+  await saveSettings({ ignoredWords: settings.ignoredWords });
+}
