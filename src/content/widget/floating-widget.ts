@@ -107,14 +107,16 @@ export class FloatingWidget {
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
 
-    // Position at bottom-right corner of the field
-    const top = rect.bottom + scrollY - 48;
-    const left = rect.right + scrollX - 140;
+    // Position at bottom-right corner of the field, inside the bounds
+    const padding = 8;
+    const top = rect.bottom + scrollY - padding;
+    const left = rect.right + scrollX - padding;
 
     this.widget.style.cssText = `
       position: absolute;
-      top: ${Math.max(rect.top + scrollY + 8, top)}px;
-      left: ${Math.max(rect.left + scrollX + 8, left)}px;
+      top: ${top}px;
+      left: ${left}px;
+      transform: translate(-100%, -100%);
       z-index: 2147483647;
     `;
   }
@@ -134,7 +136,7 @@ export class FloatingWidget {
         border-radius: 10px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
         border: 1px solid rgba(0,0,0,0.08);
-        min-width: 180px;
+        // min-width: 180px;
         user-select: none;
         overflow: hidden;
       }
@@ -295,10 +297,15 @@ export class FloatingWidget {
 
   private getWidgetHTML(state: WidgetState, counts?: IssueCounts, error?: string): string {
     if (state === 'loading') {
+      // return `
+      //   <div class="aurora-loading">
+      //     <div class="aurora-spinner"></div>
+      //     <span>Checking...</span>
+      //   </div>
+      // `;
       return `
         <div class="aurora-loading">
           <div class="aurora-spinner"></div>
-          <span>Checking...</span>
         </div>
       `;
     }
@@ -313,10 +320,15 @@ export class FloatingWidget {
     }
 
     if (state === 'clean') {
+      // return `
+      //   <div class="aurora-clean">
+      //     <span class="aurora-check">✓</span>
+      //     <span>All good</span>
+      //   </div>
+      // `;
       return `
         <div class="aurora-clean">
           <span class="aurora-check">✓</span>
-          <span>All good</span>
         </div>
       `;
     }
