@@ -25,3 +25,9 @@
 
 - Transformer pop-over does not cache tab responses. It is transforming on every tag change. Switching to previous tag should use cached text.
 - The text input need to be cached. Every time when I apply correction from the suggestion, or improvements, or other chanages suggestion from the option, the analyzer detects the change check the entire text again. This increases the API calls. What is the better way to improve this?
+
+# 🔚 Final Instruction for Claude
+
+> Implement this system incrementally.  
+> Pause for review after each milestone.  
+> Do not optimize or refactor beyond this spec unless requested.

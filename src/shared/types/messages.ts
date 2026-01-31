@@ -5,6 +5,9 @@ export type MessageType =
   | 'ANALYZE_TEXT'
   | 'ANALYSIS_RESULT'
   | 'ANALYSIS_ERROR'
+  | 'ANALYZE_BLOCK'
+  | 'BLOCK_RESULT'
+  | 'BLOCK_ERROR'
   | 'GET_SETTINGS'
   | 'SETTINGS_RESPONSE'
   | 'VALIDATE_API_KEY'
@@ -38,6 +41,36 @@ export interface AnalysisErrorMessage {
   type: 'ANALYSIS_ERROR';
   payload: {
     fieldId: string;
+    error: string;
+  };
+}
+
+export interface AnalyzeBlockMessage {
+  type: 'ANALYZE_BLOCK';
+  payload: {
+    fieldId: string;
+    blockId: string;
+    blockText: string;
+    previousBlockText: string | null;
+    nextBlockText: string | null;
+    blockStartOffset: number;
+  };
+}
+
+export interface BlockResultMessage {
+  type: 'BLOCK_RESULT';
+  payload: {
+    fieldId: string;
+    blockId: string;
+    issues: TextIssue[];
+  };
+}
+
+export interface BlockErrorMessage {
+  type: 'BLOCK_ERROR';
+  payload: {
+    fieldId: string;
+    blockId: string;
     error: string;
   };
 }
@@ -110,6 +143,9 @@ export type Message =
   | AnalyzeTextMessage
   | AnalysisResultMessage
   | AnalysisErrorMessage
+  | AnalyzeBlockMessage
+  | BlockResultMessage
+  | BlockErrorMessage
   | GetSettingsMessage
   | SettingsResponseMessage
   | ValidateApiKeyMessage
