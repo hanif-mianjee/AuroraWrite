@@ -49,7 +49,6 @@ class AuroraWrite {
   }
 
   private onFieldAdded(field: TextFieldInfo): void {
-    console.log('[AuroraWrite] Field detected:', field.type, field.id);
     this.overlayManager.createOverlay(field);
 
     const handler = field.type === 'contenteditable'
@@ -76,7 +75,6 @@ class AuroraWrite {
   }
 
   private onFieldFocus(field: TextFieldInfo): void {
-    console.log('[AuroraWrite] Field focused:', field.id);
     this.activeFieldId = field.id;
     this.lastActiveFieldId = field.id;
     const issues = this.overlayManager.getIssuesForField(field.id);
@@ -118,7 +116,6 @@ class AuroraWrite {
     if (!handler) return;
 
     const text = handler.getText();
-    console.log('[AuroraWrite] Analyzing field:', field.id, 'text length:', text.length);
 
     if (!text.trim() || text.length < 10) {
       this.overlayManager.updateAnalysis(field.id, { text, issues: [], timestamp: Date.now() });
@@ -138,7 +135,6 @@ class AuroraWrite {
     this.widget.showLoading(field.element);
 
     try {
-      console.log('[AuroraWrite] Sending analysis request to background');
       chrome.runtime.sendMessage({
         type: 'ANALYZE_TEXT',
         payload: { text, fieldId: field.id },
@@ -194,7 +190,6 @@ class AuroraWrite {
 
   private setupOverlayEvents(): void {
     this.overlayManager.setOnIssueClick((issue, fieldId) => {
-      console.log('[AuroraWrite] Issue click received:', issue.id, 'field:', fieldId);
       this.showPopoverForIssue(issue, fieldId);
     });
   }
@@ -227,7 +222,6 @@ class AuroraWrite {
 
     if (spellingIssues.length === 0) return;
 
-    console.log('[AuroraWrite] Accepting all spelling issues:', spellingIssues.length);
 
     // Apply fixes from end to start to preserve offsets
     for (const issue of spellingIssues) {
@@ -249,16 +243,12 @@ class AuroraWrite {
   }
 
   private setupSelectionEvents(): void {
-    console.log('[AuroraWrite] Setting up selection events');
     this.selectionHandler.setOnSelect((context) => {
-      console.log('[AuroraWrite] onSelect callback fired, text:', context.text.substring(0, 30));
       // Don't show trigger if transform popover is visible
       if (this.transformPopover.isVisible()) {
-        console.log('[AuroraWrite] Transform popover visible, not showing trigger');
         return;
       }
       this.currentSelectionContext = context;
-      console.log('[AuroraWrite] Calling selectionTrigger.show');
       this.selectionTrigger.show(context.rects);
     });
 
@@ -371,36 +361,28 @@ class AuroraWrite {
   }
 
   private showPopoverForIssue(issue: TextIssue, fieldId: string): void {
-    console.log('[AuroraWrite] showPopoverForIssue called:', issue.originalText);
     const field = this.detector.getFieldById(fieldId);
     if (!field) {
-      console.log('[AuroraWrite] Field not found');
       return;
     }
 
     const handler = this.handlers.get(fieldId);
     if (!handler) {
-      console.log('[AuroraWrite] Handler not found');
       return;
     }
 
     const text = handler.getText();
     const positions = handler.getTextPositions(text, issue.startOffset, issue.endOffset);
-    console.log('[AuroraWrite] Positions:', positions);
 
     if (positions.rects.length > 0) {
-      console.log('[AuroraWrite] Showing popover at:', positions.rects[0]);
       this.popover.show(issue, positions.rects[0]);
     } else {
-      console.log('[AuroraWrite] No rects found for popover positioning');
     }
   }
 
   private acceptSuggestion(issue: TextIssue): void {
     const fieldId = this.activeFieldId || this.lastActiveFieldId;
-    console.log('[AuroraWrite] acceptSuggestion called, fieldId:', fieldId);
     if (!fieldId) {
-      console.log('[AuroraWrite] No field ID for accept');
       return;
     }
 
@@ -421,9 +403,7 @@ class AuroraWrite {
 
   private ignoreIssue(issue: TextIssue): void {
     const fieldId = this.activeFieldId || this.lastActiveFieldId;
-    console.log('[AuroraWrite] ignoreIssue called:', issue.id, 'fieldId:', fieldId);
     if (!fieldId) {
-      console.log('[AuroraWrite] No field ID, cannot ignore');
       return;
     }
 
@@ -477,9 +457,7 @@ class AuroraWrite {
   }
 }
 
-console.log('[AuroraWrite] Content script loaded');
 
 const aurora = new AuroraWrite();
 aurora.start();
 
-console.log('[AuroraWrite] Started');
