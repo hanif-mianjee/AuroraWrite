@@ -1,5 +1,8 @@
 export type IssueCategory = 'spelling' | 'grammar' | 'style' | 'clarity' | 'tone' | 'rephrase';
 
+export type IssueSource = 'analysis' | 'verification';
+export type IssueStatus = 'new' | 'applied' | 'verified' | 'stale';
+
 export interface TextIssue {
   id: string;
   category: IssueCategory;
@@ -9,6 +12,8 @@ export interface TextIssue {
   suggestedText: string;
   explanation: string;
   ignored?: boolean;
+  source?: IssueSource; // 'analysis' or 'verification'
+  status?: IssueStatus; // 'new', 'applied', 'verified', 'stale'
 }
 
 export interface AnalysisResult {

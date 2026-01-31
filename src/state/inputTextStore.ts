@@ -10,6 +10,17 @@ import { splitIntoBlocks, RawBlock } from '../block/blockSplitter';
 import { hashBlock } from '../block/blockHasher';
 
 /**
+ * Confidence scoring constants for stability pass system.
+ */
+export const CONFIDENCE_THRESHOLDS = {
+  STABLE: 0.8, // Block is stable when confidence >= 0.8
+  NO_ISSUES_BOOST: 0.4, // +0.4 when AI returns no issues
+  ALL_APPLIED_BOOST: 0.2, // +0.2 when user applies all suggestions
+  NEW_ISSUES_PENALTY: 0.3, // -0.3 if new issues appear after a pass
+  MAX_PASSES: 2, // Maximum stability passes per block
+};
+
+/**
  * State of an individual text block.
  */
 export interface BlockState {
@@ -22,6 +33,13 @@ export interface BlockState {
   version: number;
   isAnalyzed: boolean;
   isAnalyzing: boolean;
+  // Stability pass fields
+  confidence: number; // 0.0 → 1.0, block is stable at >= 0.8
+  passes: number; // Number of stability passes completed
+  isStabilityChecking: boolean; // Currently in stability check
+  // Issue state machine fields
+  hasUnappliedIssues: boolean; // Has issues with status === 'new'
+  activeRequestId: string | null; // Current pending request ID for race condition prevention
 }
 
 /**
@@ -80,6 +98,11 @@ export class InputTextStore {
         version: 1,
         isAnalyzed: false,
         isAnalyzing: false,
+        confidence: 0,
+        passes: 0,
+        isStabilityChecking: false,
+        hasUnappliedIssues: false,
+        activeRequestId: null,
       }));
 
       this.states.set(fieldId, {
@@ -176,6 +199,11 @@ export class InputTextStore {
           version: 1,
           isAnalyzed: false,
           isAnalyzing: false,
+          confidence: 0,
+          passes: 0,
+          isStabilityChecking: false,
+          hasUnappliedIssues: false,
+          activeRequestId: null,
         };
 
         dirtyBlocks.push(blockState);
@@ -210,19 +238,110 @@ export class InputTextStore {
    * @param fieldId - The text field identifier
    * @param blockId - The block identifier
    * @param issues - The issues found in this block
+   * @param isStabilityPass - Whether this is a stability pass result
+   * @param requestId - Optional request ID for race condition prevention
    */
-  mergeBlockResult(fieldId: string, blockId: string, issues: TextIssue[]): void {
+  mergeBlockResult(
+    fieldId: string,
+    blockId: string,
+    issues: TextIssue[],
+    isStabilityPass: boolean = false,
+    requestId?: string
+  ): boolean {
+    const state = this.states.get(fieldId);
+    if (!state) return false;
+
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (!block) return false;
+
+    // Race condition prevention: discard stale responses
+    if (requestId && block.activeRequestId && requestId !== block.activeRequestId) {
+      console.log(`[AuroraWrite] Discarding stale response for block ${blockId}`);
+      return false;
+    }
+
+    if (isStabilityPass) {
+      // CRITICAL: Verification must NEVER delete existing analysis issues
+      // Only ADD new verification issues
+      if (issues.length > 0) {
+        // Mark new issues with source and status
+        const newVerificationIssues = issues.map((issue) => ({
+          ...issue,
+          source: 'verification' as const,
+          status: 'new' as const,
+        }));
+
+        // Check for truly new issues (not duplicates of existing)
+        const existingIds = new Set(block.issues.map((i) => `${i.startOffset}-${i.endOffset}-${i.suggestedText}`));
+        const trulyNewIssues = newVerificationIssues.filter(
+          (issue) => !existingIds.has(`${issue.startOffset}-${issue.endOffset}-${issue.suggestedText}`)
+        );
+
+        if (trulyNewIssues.length > 0) {
+          // Add new issues to existing ones
+          block.issues = [...block.issues, ...trulyNewIssues];
+          block.confidence = Math.max(
+            0.0,
+            block.confidence - CONFIDENCE_THRESHOLDS.NEW_ISSUES_PENALTY
+          );
+        } else {
+          // No truly new issues - boost confidence
+          block.confidence = Math.min(
+            1.0,
+            block.confidence + CONFIDENCE_THRESHOLDS.NO_ISSUES_BOOST
+          );
+        }
+      } else {
+        // No issues found during verification - boost confidence
+        // DO NOT touch existing issues
+        block.confidence = Math.min(
+          1.0,
+          block.confidence + CONFIDENCE_THRESHOLDS.NO_ISSUES_BOOST
+        );
+      }
+      block.passes++;
+      block.isStabilityChecking = false;
+    } else {
+      // Initial analysis - replace all issues
+      block.issues = issues.map((issue) => ({
+        ...issue,
+        source: 'analysis' as const,
+        status: 'new' as const,
+      }));
+
+      // Set baseline confidence
+      if (issues.length === 0) {
+        block.confidence = CONFIDENCE_THRESHOLDS.NO_ISSUES_BOOST;
+      } else {
+        block.confidence = 0;
+      }
+    }
+
+    block.version++;
+    block.isAnalyzed = true;
+    block.isAnalyzing = false;
+    block.activeRequestId = null;
+
+    // Update hasUnappliedIssues flag
+    block.hasUnappliedIssues = block.issues.some(
+      (issue) => issue.status === 'new' || issue.status === undefined
+    );
+
+    state.version++;
+    return true;
+  }
+
+  /**
+   * Set the active request ID for a block (for race condition prevention).
+   */
+  setBlockRequestId(fieldId: string, blockId: string, requestId: string): void {
     const state = this.states.get(fieldId);
     if (!state) return;
 
     const block = state.blocks.find((b) => b.id === blockId);
-    if (!block) return;
-
-    block.issues = issues;
-    block.version++;
-    block.isAnalyzed = true;
-    block.isAnalyzing = false;
-    state.version++;
+    if (block) {
+      block.activeRequestId = requestId;
+    }
   }
 
   /**
@@ -265,6 +384,11 @@ export class InputTextStore {
         block.issues.splice(issueIndex, 1);
         block.version++;
         state.version++;
+
+        // Update hasUnappliedIssues flag
+        block.hasUnappliedIssues = block.issues.some(
+          (issue) => issue.status === 'new' || issue.status === undefined
+        );
         break;
       }
     }
@@ -361,6 +485,172 @@ export class InputTextStore {
    */
   clearAll(): void {
     this.states.clear();
+  }
+
+  // ============================================
+  // Stability Pass Methods
+  // ============================================
+
+  /**
+   * Check if a block is stable (confidence >= 0.8 AND passes >= 1).
+   */
+  isBlockStable(block: BlockState): boolean {
+    return (
+      block.confidence >= CONFIDENCE_THRESHOLDS.STABLE &&
+      block.passes >= 1
+    );
+  }
+
+  /**
+   * Get all unstable blocks for a field that are eligible for verification.
+   * STABILITY GUARD: Only blocks without unapplied issues can be verified.
+   */
+  getUnstableBlocks(fieldId: string): BlockState[] {
+    const state = this.states.get(fieldId);
+    if (!state) return [];
+
+    return state.blocks.filter(
+      (block) =>
+        block.isAnalyzed &&
+        !block.isAnalyzing &&
+        !block.isStabilityChecking &&
+        !block.hasUnappliedIssues && // CRITICAL: Only verify blocks with no unapplied issues
+        block.passes < CONFIDENCE_THRESHOLDS.MAX_PASSES &&
+        !this.isBlockStable(block)
+    );
+  }
+
+  /**
+   * Check if any block in the field has unapplied issues.
+   */
+  hasAnyUnappliedIssues(fieldId: string): boolean {
+    const state = this.states.get(fieldId);
+    if (!state) return false;
+
+    return state.blocks.some((block) => block.hasUnappliedIssues);
+  }
+
+  /**
+   * Check if all blocks for a field are stable.
+   */
+  areAllBlocksStable(fieldId: string): boolean {
+    const state = this.states.get(fieldId);
+    if (!state) return true;
+
+    return state.blocks.every(
+      (block) =>
+        this.isBlockStable(block) ||
+        block.passes >= CONFIDENCE_THRESHOLDS.MAX_PASSES
+    );
+  }
+
+  /**
+   * Boost confidence when AI returns no issues for a block.
+   * +0.4 confidence
+   */
+  boostConfidenceNoIssues(fieldId: string, blockId: string): void {
+    const state = this.states.get(fieldId);
+    if (!state) return;
+
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (block) {
+      block.confidence = Math.min(
+        1.0,
+        block.confidence + CONFIDENCE_THRESHOLDS.NO_ISSUES_BOOST
+      );
+      block.passes++;
+      block.isStabilityChecking = false;
+    }
+  }
+
+  /**
+   * Boost confidence when user applies all suggestions for a block.
+   * +0.2 confidence
+   */
+  boostConfidenceAllApplied(fieldId: string, blockId: string): void {
+    const state = this.states.get(fieldId);
+    if (!state) return;
+
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (block) {
+      block.confidence = Math.min(
+        1.0,
+        block.confidence + CONFIDENCE_THRESHOLDS.ALL_APPLIED_BOOST
+      );
+    }
+  }
+
+  /**
+   * Penalize confidence when new issues appear after a stability pass.
+   * -0.3 confidence
+   */
+  penalizeConfidenceNewIssues(fieldId: string, blockId: string): void {
+    const state = this.states.get(fieldId);
+    if (!state) return;
+
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (block) {
+      block.confidence = Math.max(
+        0.0,
+        block.confidence - CONFIDENCE_THRESHOLDS.NEW_ISSUES_PENALTY
+      );
+      block.passes++;
+      block.isStabilityChecking = false;
+    }
+  }
+
+  /**
+   * Mark a block as currently in stability check.
+   */
+  setBlockStabilityChecking(
+    fieldId: string,
+    blockId: string,
+    isChecking: boolean
+  ): void {
+    const state = this.states.get(fieldId);
+    if (!state) return;
+
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (block) {
+      block.isStabilityChecking = isChecking;
+    }
+  }
+
+  /**
+   * Force a block into stable state (used when max passes reached).
+   */
+  forceBlockStable(fieldId: string, blockId: string): void {
+    const state = this.states.get(fieldId);
+    if (!state) return;
+
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (block) {
+      block.confidence = CONFIDENCE_THRESHOLDS.STABLE;
+      block.passes = CONFIDENCE_THRESHOLDS.MAX_PASSES;
+      block.isStabilityChecking = false;
+    }
+  }
+
+  /**
+   * Check if all blocks are analyzed and clean (no pending analysis).
+   */
+  areAllBlocksClean(fieldId: string): boolean {
+    const state = this.states.get(fieldId);
+    if (!state) return true;
+
+    return state.blocks.every(
+      (block) => block.isAnalyzed && !block.isAnalyzing && !block.isStabilityChecking
+    );
+  }
+
+  /**
+   * Get a specific block by ID.
+   */
+  getBlock(fieldId: string, blockId: string): BlockState | undefined {
+    const state = this.states.get(fieldId);
+    if (!state) return undefined;
+
+    return state.blocks.find((b) => b.id === blockId);
   }
 }
 

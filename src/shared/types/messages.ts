@@ -8,6 +8,9 @@ export type MessageType =
   | 'ANALYZE_BLOCK'
   | 'BLOCK_RESULT'
   | 'BLOCK_ERROR'
+  | 'VERIFY_BLOCK'
+  | 'VERIFY_RESULT'
+  | 'VERIFY_ERROR'
   | 'GET_SETTINGS'
   | 'SETTINGS_RESPONSE'
   | 'VALIDATE_API_KEY'
@@ -17,7 +20,8 @@ export type MessageType =
   | 'TRANSFORM_RESULT'
   | 'TRANSFORM_ERROR'
   | 'GET_PROVIDERS'
-  | 'PROVIDERS_RESPONSE';
+  | 'PROVIDERS_RESPONSE'
+  | 'CLEAR_CACHE';
 
 export type TransformationType = 'improve' | 'rephrase' | 'translate' | 'shorten' | 'friendly' | 'formal' | 'custom';
 
@@ -54,6 +58,7 @@ export interface AnalyzeBlockMessage {
     previousBlockText: string | null;
     nextBlockText: string | null;
     blockStartOffset: number;
+    requestId?: string;
   };
 }
 
@@ -63,11 +68,44 @@ export interface BlockResultMessage {
     fieldId: string;
     blockId: string;
     issues: TextIssue[];
+    requestId?: string;
   };
 }
 
 export interface BlockErrorMessage {
   type: 'BLOCK_ERROR';
+  payload: {
+    fieldId: string;
+    blockId: string;
+    error: string;
+  };
+}
+
+export interface VerifyBlockMessage {
+  type: 'VERIFY_BLOCK';
+  payload: {
+    fieldId: string;
+    blockId: string;
+    blockText: string;
+    previousBlockText: string | null;
+    nextBlockText: string | null;
+    blockStartOffset: number;
+    requestId?: string;
+  };
+}
+
+export interface VerifyResultMessage {
+  type: 'VERIFY_RESULT';
+  payload: {
+    fieldId: string;
+    blockId: string;
+    issues: TextIssue[];
+    requestId?: string;
+  };
+}
+
+export interface VerifyErrorMessage {
+  type: 'VERIFY_ERROR';
   payload: {
     fieldId: string;
     blockId: string;
@@ -139,6 +177,10 @@ export interface TransformErrorMessage {
   };
 }
 
+export interface ClearCacheMessage {
+  type: 'CLEAR_CACHE';
+}
+
 export type Message =
   | AnalyzeTextMessage
   | AnalysisResultMessage
@@ -146,6 +188,9 @@ export type Message =
   | AnalyzeBlockMessage
   | BlockResultMessage
   | BlockErrorMessage
+  | VerifyBlockMessage
+  | VerifyResultMessage
+  | VerifyErrorMessage
   | GetSettingsMessage
   | SettingsResponseMessage
   | ValidateApiKeyMessage
@@ -155,6 +200,7 @@ export type Message =
   | TransformResultMessage
   | TransformErrorMessage
   | GetProvidersMessage
-  | ProvidersResponseMessage;
+  | ProvidersResponseMessage
+  | ClearCacheMessage;
 
 import type { Settings } from './settings';

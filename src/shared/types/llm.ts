@@ -18,6 +18,7 @@ export interface LLMProvider {
   readonly type: LLMProviderType;
   readonly config: LLMProviderConfig;
   analyzeText(text: string, apiKey: string, settings: Settings): Promise<AnalysisResult>;
+  verifyText(text: string, apiKey: string, settings: Settings): Promise<AnalysisResult>;
   transformText(text: string, type: TransformationType, apiKey: string, settings: Settings, customPrompt?: string): Promise<string>;
   validateApiKey(apiKey: string): Promise<boolean>;
 }
