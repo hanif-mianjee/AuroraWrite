@@ -1,4 +1,5 @@
 import type { TransformationType } from '../../shared/types/messages';
+import { transformerRegistry } from '../../shared/constants/transformers';
 
 export interface TransformCallbacks {
   onTransform: (type: TransformationType, customPrompt?: string) => void;
@@ -8,39 +9,41 @@ export interface TransformCallbacks {
 
 type TabType = Exclude<TransformationType, 'custom' | 'translate'>;
 
-const TABS: { type: TabType; label: string }[] = [
-  { type: 'improve', label: 'Improve' },
-  { type: 'rephrase', label: 'Rephrase' },
-  { type: 'shorten', label: 'Shorten' },
-  { type: 'friendly', label: 'Friendly' },
-  { type: 'formal', label: 'Formal' },
-];
+// Get standard transformers from registry
+const getStandardTabs = (): { type: TabType; label: string }[] => {
+  return transformerRegistry
+    .getStandardTransformers()
+    .map(t => ({ type: t.id as TabType, label: t.label }));
+};
 
 export class TransformPopover {
   private container: HTMLElement | null = null;
   private shadowRoot: ShadowRoot | null = null;
   private callbacks: TransformCallbacks | null = null;
-  private currentTab: TabType = 'improve';
+  private currentTab: TabType | 'custom' = 'improve';
   private originalText = '';
   private transformedText = '';
   private isLoading = false;
   private lastCustomPrompt = '';
+  private customTabVisible = false;
 
   setCallbacks(callbacks: TransformCallbacks): void {
     this.callbacks = callbacks;
   }
 
-  show(originalText: string, rects: DOMRect[]): void {
+  show(originalText: string, rects: DOMRect[], editableElement?: HTMLElement | null): void {
     this.hide();
     this.originalText = originalText;
     this.transformedText = '';
     this.currentTab = 'improve';
     this.isLoading = false;
     this.lastCustomPrompt = '';
+    this.customTabVisible = false;
 
     if (rects.length === 0) return;
 
     const lastRect = rects[rects.length - 1];
+    const anchorElement = editableElement;
 
     this.container = document.createElement('div');
     this.container.className = 'aurora-transform-popover';
@@ -59,7 +62,7 @@ export class TransformPopover {
     document.body.appendChild(this.container);
 
     // Position after adding to DOM so we can measure
-    this.positionPopover(lastRect);
+    this.positionPopover(lastRect, anchorElement);
 
     // Trigger initial transformation
     this.requestTransform(this.currentTab);
@@ -74,7 +77,7 @@ export class TransformPopover {
     }
   };
 
-  private positionPopover(rect: DOMRect): void {
+  private positionPopover(rect: DOMRect, anchorElement?: HTMLElement | null): void {
     if (!this.container || !this.shadowRoot) return;
 
     const popover = this.shadowRoot.querySelector('.popover') as HTMLElement;
@@ -88,8 +91,19 @@ export class TransformPopover {
     const scrollY = window.scrollY;
     const padding = 16;
 
-    let left = rect.left + scrollX;
-    let top = rect.bottom + scrollY + 8;
+    let left: number;
+    let top: number;
+
+    // For textarea/input elements, position relative to the element
+    if (anchorElement instanceof HTMLTextAreaElement || anchorElement instanceof HTMLInputElement) {
+      const elementRect = anchorElement.getBoundingClientRect();
+      // Center horizontally relative to the element, or align to left if too wide
+      left = elementRect.left + scrollX;
+      top = rect.bottom + scrollY + 8;
+    } else {
+      left = rect.left + scrollX;
+      top = rect.bottom + scrollY + 8;
+    }
 
     // Adjust if would go off right edge
     if (left + popoverWidth > viewportWidth + scrollX - padding) {
@@ -172,6 +186,19 @@ export class TransformPopover {
       .tab.active {
         background: linear-gradient(135deg, #7c3aed, #8b5cf6);
         color: white;
+      }
+      .tab-custom {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fcd34d;
+      }
+      .tab-custom:hover {
+        background: #fde68a;
+      }
+      .tab-custom.active {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border: none;
       }
       .preview-area {
         padding: 12px 16px;
@@ -327,9 +354,15 @@ export class TransformPopover {
   }
 
   private getPopoverHTML(): string {
-    const tabsHTML = TABS.map(
+    const standardTabs = getStandardTabs();
+    let tabsHTML = standardTabs.map(
       (tab) => `<button class="tab${tab.type === this.currentTab ? ' active' : ''}" data-tab="${tab.type}">${tab.label}</button>`
     ).join('');
+
+    // Add custom tab if visible
+    if (this.customTabVisible) {
+      tabsHTML += `<button class="tab tab-custom${this.currentTab === 'custom' ? ' active' : ''}" data-tab="custom">Custom</button>`;
+    }
 
     return `
       <div class="popover-header">
@@ -363,11 +396,22 @@ export class TransformPopover {
     // Tab clicks
     content.querySelectorAll('.tab').forEach((tab) => {
       tab.addEventListener('click', (e) => {
-        const tabType = (e.target as HTMLElement).dataset.tab as TabType;
+        const tabType = (e.target as HTMLElement).dataset.tab as TabType | 'custom';
         if (tabType && tabType !== this.currentTab) {
+          // When clicking a standard tab, hide custom tab and clear input
+          if (tabType !== 'custom') {
+            this.customTabVisible = false;
+            this.lastCustomPrompt = '';
+            const customInput = content.querySelector('.custom-input') as HTMLInputElement;
+            if (customInput) {
+              customInput.value = '';
+            }
+            // Re-render tabs to remove custom tab
+            this.updateTabsContainer(content);
+          }
           this.currentTab = tabType;
           this.updateTabStyles(content);
-          this.requestTransform(tabType);
+          this.requestTransform(tabType === 'custom' ? 'custom' : tabType, tabType === 'custom' ? this.lastCustomPrompt : undefined);
         }
       });
     });
@@ -380,10 +424,13 @@ export class TransformPopover {
       const prompt = customInput.value.trim();
       if (prompt) {
         this.lastCustomPrompt = prompt;
-        // Clear all active tabs since this is a custom request
-        content.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        // Show custom tab and make it active
+        this.customTabVisible = true;
+        this.currentTab = 'custom';
+        // Re-render tabs to show custom tab
+        this.updateTabsContainer(content);
+        this.updateTabStyles(content);
         this.requestTransform('custom', prompt);
-        // Don't clear the input - keep it visible so user knows what they asked for
       }
     };
 
@@ -426,6 +473,43 @@ export class TransformPopover {
     content.querySelectorAll('.tab').forEach((tab) => {
       const tabType = (tab as HTMLElement).dataset.tab;
       tab.classList.toggle('active', tabType === this.currentTab);
+    });
+  }
+
+  private updateTabsContainer(content: HTMLElement): void {
+    const tabsContainer = content.querySelector('.tabs');
+    if (!tabsContainer) return;
+
+    const standardTabs = getStandardTabs();
+    let tabsHTML = standardTabs.map(
+      (tab) => `<button class="tab${tab.type === this.currentTab ? ' active' : ''}" data-tab="${tab.type}">${tab.label}</button>`
+    ).join('');
+
+    if (this.customTabVisible) {
+      tabsHTML += `<button class="tab tab-custom${this.currentTab === 'custom' ? ' active' : ''}" data-tab="custom">Custom</button>`;
+    }
+
+    tabsContainer.innerHTML = tabsHTML;
+
+    // Re-attach event listeners to new tabs
+    tabsContainer.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', (e) => {
+        const tabType = (e.target as HTMLElement).dataset.tab as TabType | 'custom';
+        if (tabType && tabType !== this.currentTab) {
+          if (tabType !== 'custom') {
+            this.customTabVisible = false;
+            this.lastCustomPrompt = '';
+            const customInput = content.querySelector('.custom-input') as HTMLInputElement;
+            if (customInput) {
+              customInput.value = '';
+            }
+            this.updateTabsContainer(content);
+          }
+          this.currentTab = tabType;
+          this.updateTabStyles(content);
+          this.requestTransform(tabType === 'custom' ? 'custom' : tabType, tabType === 'custom' ? this.lastCustomPrompt : undefined);
+        }
+      });
     });
   }
 

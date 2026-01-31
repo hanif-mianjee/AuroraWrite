@@ -1,4 +1,5 @@
 import type { AnalysisResult, TextIssue, IssueCategory } from './analysis';
+import type { LLMProviderType, LLMProviderConfig } from './llm';
 
 export type MessageType =
   | 'ANALYZE_TEXT'
@@ -11,7 +12,9 @@ export type MessageType =
   | 'API_KEY_INVALID'
   | 'TRANSFORM_TEXT'
   | 'TRANSFORM_RESULT'
-  | 'TRANSFORM_ERROR';
+  | 'TRANSFORM_ERROR'
+  | 'GET_PROVIDERS'
+  | 'PROVIDERS_RESPONSE';
 
 export type TransformationType = 'improve' | 'rephrase' | 'translate' | 'shorten' | 'friendly' | 'formal' | 'custom';
 
@@ -52,7 +55,17 @@ export interface ValidateApiKeyMessage {
   type: 'VALIDATE_API_KEY';
   payload: {
     apiKey: string;
+    providerType?: LLMProviderType;
   };
+}
+
+export interface GetProvidersMessage {
+  type: 'GET_PROVIDERS';
+}
+
+export interface ProvidersResponseMessage {
+  type: 'PROVIDERS_RESPONSE';
+  payload: LLMProviderConfig[];
 }
 
 export interface ApiKeyValidMessage {
@@ -104,6 +117,8 @@ export type Message =
   | ApiKeyInvalidMessage
   | TransformTextMessage
   | TransformResultMessage
-  | TransformErrorMessage;
+  | TransformErrorMessage
+  | GetProvidersMessage
+  | ProvidersResponseMessage;
 
 import type { Settings } from './settings';

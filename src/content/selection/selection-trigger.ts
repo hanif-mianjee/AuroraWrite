@@ -9,7 +9,7 @@ export class SelectionTrigger {
     this.onClick = callback;
   }
 
-  show(rects: DOMRect[]): void {
+  show(rects: DOMRect[], editableElement?: HTMLElement | null): void {
     this.hide();
 
     if (rects.length === 0) {
@@ -53,8 +53,19 @@ export class SelectionTrigger {
     const triggerHeight = 30;
     const padding = 8;
 
-    let left = lastRect.right + scrollX + 4;
-    let top = lastRect.bottom + scrollY + 4;
+    let left: number;
+    let top: number;
+
+    // For textarea/input elements, center the button below the element
+    if (editableElement instanceof HTMLTextAreaElement || editableElement instanceof HTMLInputElement) {
+      const elementRect = editableElement.getBoundingClientRect();
+      left = elementRect.left + scrollX + (elementRect.width / 2) - (triggerWidth / 2);
+      top = lastRect.bottom + scrollY + 4;
+    } else {
+      // For contenteditable and regular selections, center below the last rect
+      left = lastRect.left + scrollX + (lastRect.width / 2) - (triggerWidth / 2);
+      top = lastRect.bottom + scrollY + 4;
+    }
 
     // Check right edge
     if (left + triggerWidth > viewportWidth + scrollX - padding) {

@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, type Settings } from '../types/settings';
+import { DEFAULT_SETTINGS, type Settings, type ProviderSettings } from '../types/settings';
 
 const STORAGE_KEY = 'aurora_write_settings';
 
@@ -54,4 +54,13 @@ export async function removeIgnoredWord(word: string): Promise<void> {
     (w) => w !== word.toLowerCase()
   );
   await saveSettings({ ignoredWords: settings.ignoredWords });
+}
+
+export async function saveProviderSettings(providerSettings: ProviderSettings): Promise<void> {
+  await saveSettings({ providerSettings });
+}
+
+export async function getProviderSettings(): Promise<ProviderSettings | undefined> {
+  const settings = await getSettings();
+  return settings.providerSettings;
 }

@@ -363,3 +363,81 @@ select:focus {
   color: #999;
   font-size: 13px;
 }
+
+/* Provider Selection */
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.provider-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.provider-card:hover {
+  border-color: #1976d2;
+  background: #f8faff;
+}
+
+.provider-card.active {
+  border-color: #1976d2;
+  background: #e3f2fd;
+}
+
+.provider-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.provider-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.provider-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.provider-badge.free {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.provider-badge.paid {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.provider-config {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.provider-config-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.provider-config .form-group {
+  margin-bottom: 12px;
+}
+
+.provider-config .form-group:last-child {
+  margin-bottom: 0;
+}

@@ -225,6 +225,16 @@ export class SelectionHandler {
       return;
     }
 
+    // Check editable context FIRST - only show trigger for editable content
+    const { isEditable, editableElement } = this.getEditableContext(selection);
+    if (!isEditable) {
+      if (this.lastSelectionText) {
+        this.lastSelectionText = '';
+        this.onClear?.();
+      }
+      return;
+    }
+
     const text = selection.toString().trim();
 
     if (text.length < 3) {
@@ -259,9 +269,6 @@ export class SelectionHandler {
     if (rects.length === 0) {
       return;
     }
-
-    // Determine if selection is in an editable element
-    const { isEditable, editableElement } = this.getEditableContext(selection);
 
     const context: SelectionContext = {
       text,

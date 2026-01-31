@@ -189,7 +189,7 @@ export class SuggestionPopover {
       <div class="aurora-popover-actions">
         <button class="aurora-btn aurora-btn-primary" data-action="accept">Accept</button>
         <button class="aurora-btn aurora-btn-secondary" data-action="ignore">Ignore</button>
-        <button class="aurora-btn aurora-btn-text" data-action="ignore-all">Ignore All</button>
+        <button class="aurora-btn aurora-btn-text" data-action="ignore-all">Always Ignore</button>
       </div>
     `;
   }
