@@ -241,7 +241,11 @@ class AuroraWrite {
     console.log('[AuroraWrite] Original text:', text);
 
     // Apply ALL replacements to the text string (from end to start to preserve offsets)
-    for (const issue of spellingIssues) {
+    const sortedIssues = [...spellingIssues].sort(
+      (a, b) => b.startOffset - a.startOffset
+    );
+
+    for (const issue of sortedIssues) {
       console.log('[AuroraWrite] Fixing:', issue.originalText, '->', issue.suggestedText, 'at', issue.startOffset, '-', issue.endOffset);
       text = text.substring(0, issue.startOffset) + issue.suggestedText + text.substring(issue.endOffset);
     }
