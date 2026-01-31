@@ -7,20 +7,23 @@ import { CacheManager } from './cache-manager';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const DEFAULT_MODEL = 'llama-3.1-8b-instant';
 
-const SYSTEM_PROMPT = `You are a precise writing assistant. Detect errors and suggest improvements.
+const SYSTEM_PROMPT = `You are a strict proofreader. Find ALL errors in ONE pass. Be conservative—only flag clear mistakes.
 
-CATEGORIES:
-• spelling: Typos and misspellings ("teh"→"the", "recieve"→"receive")
-• grammar: Subject-verb agreement, articles, tense ("he go"→"he goes", "a apple"→"an apple")
-• style: Double spaces, repeated words ("the the"→"the"), extreme redundancy
-• clarity: Passive voice→active ("was written by John"→"John wrote"), wordy phrases ("in order to"→"to", "due to the fact that"→"because")
-• rephrase: Suggest better ways to express awkward or unclear sentences. Only for sentences that would genuinely benefit from rephrasing—not just alternatives.
+CATEGORIES (be strict):
+• spelling: ONLY actual typos/misspellings. Single misspelled WORDS only, not sentences. Examples: "teh"→"the", "recieve"→"receive", "definately"→"definitely"
+• grammar: Clear grammatical errors. Examples: "he go"→"he goes", "a apple"→"an apple", "their going"→"they're going"
+• style: Repeated words, double spaces. Examples: "the the"→"the", "very very"→"very"
+• clarity: Wordy phrases that have standard shorter forms. Examples: "in order to"→"to", "due to the fact that"→"because"
+• rephrase: ONLY for genuinely awkward/unclear sentences. Do NOT suggest alternatives to correct text.
 
-RULES:
-1. originalText must be EXACT character-for-character match from input
-2. One fix per issue—don't chain improvements
-3. For rephrase: only suggest when the sentence is awkward, unclear, or could be significantly improved
-4. Skip correct, clear text even if you'd write it differently
+CRITICAL RULES:
+1. Find ALL issues in the text at once—do not hold back issues for later
+2. originalText must EXACTLY match text from input (character-for-character)
+3. suggestedText must be DIFFERENT from originalText (if they're the same, don't include it)
+4. For spelling: originalText should be the misspelled WORD only, not the whole sentence
+5. Do NOT flag correct text. If unsure, skip it.
+6. Do NOT suggest stylistic alternatives to correct writing
+7. Be conservative: fewer false positives is better than catching everything
 
 OUTPUT FORMAT (strict JSON):
 {
@@ -28,13 +31,13 @@ OUTPUT FORMAT (strict JSON):
     {
       "category": "spelling|grammar|style|clarity|rephrase",
       "originalText": "exact text from input",
-      "suggestedText": "corrected or rephrased text",
+      "suggestedText": "corrected text (must be different)",
       "explanation": "Brief reason"
     }
   ]
 }
 
-If text is correct, return: {"issues": []}`;
+If text has no errors, return: {"issues": []}`;
 
 interface GroqResponse {
   issues: Array<{
@@ -106,8 +109,8 @@ export class GroqClient {
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: `Analyze this text for issues. Only report issues in these categories: ${enabledCategories.join(', ')}\n\nText:\n${text}` },
         ],
-        temperature: 0.1,
-        max_tokens: 1024,
+        temperature: 0.05,
+        max_tokens: 2048,
         response_format: { type: 'json_object' },
       }),
     });
@@ -181,6 +184,14 @@ export class GroqClient {
     for (const issue of parsed.issues) {
       if (!this.isValidCategory(issue.category)) continue;
       if (!issue.originalText || !issue.suggestedText) continue;
+
+      // Filter out false positives where original equals suggested
+      const normalizedOriginal = issue.originalText.trim().toLowerCase();
+      const normalizedSuggested = issue.suggestedText.trim().toLowerCase();
+      if (normalizedOriginal === normalizedSuggested) {
+        console.log('[AuroraWrite] Skipping false positive - same text:', issue.originalText);
+        continue;
+      }
 
       // Find the originalText in the text, trying exact match first
       let startOffset = this.findTextPosition(originalText, issue.originalText, usedRanges);
