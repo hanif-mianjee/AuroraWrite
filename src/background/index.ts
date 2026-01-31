@@ -1,6 +1,6 @@
 import { LLMFactory } from './providers';
 import { getSettings, getApiKey } from '../shared/utils/storage';
-import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, BlockResultMessage, BlockErrorMessage } from '../shared/types/messages';
+import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, BlockResultMessage, BlockErrorMessage, VerifyResultMessage, VerifyErrorMessage } from '../shared/types/messages';
 import type { LLMProviderType } from '../shared/types/llm';
 import type { TextIssue } from '../shared/types/analysis';
 
@@ -85,7 +85,7 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
     }
 
     case 'ANALYZE_BLOCK': {
-      const { fieldId, blockId, blockText, previousBlockText, nextBlockText, blockStartOffset } = message.payload;
+      const { fieldId, blockId, blockText, previousBlockText, nextBlockText, blockStartOffset, requestId } = message.payload;
       console.log('[AuroraWrite] ANALYZE_BLOCK for field:', fieldId, 'block:', blockId, 'text length:', blockText.length);
 
       const settings = await getSettings();
@@ -132,7 +132,7 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
 
         const response: BlockResultMessage = {
           type: 'BLOCK_RESULT',
-          payload: { fieldId, blockId, issues: blockIssues },
+          payload: { fieldId, blockId, issues: blockIssues, requestId },
         };
         if (sender.tab?.id) {
           chrome.tabs.sendMessage(sender.tab.id, response);
@@ -142,6 +142,71 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
         console.error('[AuroraWrite] Block analysis error:', error);
         const errorResponse: BlockErrorMessage = {
           type: 'BLOCK_ERROR',
+          payload: { fieldId, blockId, error: error instanceof Error ? error.message : 'Unknown error' },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
+        }
+        return errorResponse;
+      }
+    }
+
+    case 'VERIFY_BLOCK': {
+      const { fieldId, blockId, blockText, previousBlockText, nextBlockText, blockStartOffset, requestId } = message.payload;
+      console.log('[AuroraWrite:Stability] VERIFY_BLOCK for field:', fieldId, 'block:', blockId);
+
+      const settings = await getSettings();
+      const apiKey = await getActiveApiKey(settings);
+      const provider = getActiveProvider(settings);
+
+      if (!apiKey) {
+        const errorResponse: VerifyErrorMessage = {
+          type: 'VERIFY_ERROR',
+          payload: { fieldId, blockId, error: `API key not configured.` },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
+        }
+        return errorResponse;
+      }
+
+      try {
+        // Verify this block with context using lighter verification prompt
+        const contextPrefix = previousBlockText ? `[Context before: ${previousBlockText.slice(-50)}]\n\n` : '';
+        const contextSuffix = nextBlockText ? `\n\n[Context after: ${nextBlockText.slice(0, 50)}]` : '';
+        const textWithContext = contextPrefix + blockText + contextSuffix;
+
+        const result = await provider.verifyText(textWithContext, apiKey, settings);
+
+        // Filter issues to only those within the block text (not in context)
+        const contextPrefixLength = contextPrefix.length;
+        const blockEndInContext = contextPrefixLength + blockText.length;
+
+        const blockIssues: TextIssue[] = result.issues
+          .filter((issue: TextIssue) => {
+            return issue.startOffset >= contextPrefixLength &&
+                   issue.endOffset <= blockEndInContext;
+          })
+          .map((issue: TextIssue) => ({
+            ...issue,
+            startOffset: issue.startOffset - contextPrefixLength + blockStartOffset,
+            endOffset: issue.endOffset - contextPrefixLength + blockStartOffset,
+          }));
+
+        console.log('[AuroraWrite:Stability] Verification complete, new issues found:', blockIssues.length);
+
+        const response: VerifyResultMessage = {
+          type: 'VERIFY_RESULT',
+          payload: { fieldId, blockId, issues: blockIssues, requestId },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, response);
+        }
+        return response;
+      } catch (error) {
+        console.error('[AuroraWrite:Stability] Verification error:', error);
+        const errorResponse: VerifyErrorMessage = {
+          type: 'VERIFY_ERROR',
           payload: { fieldId, blockId, error: error instanceof Error ? error.message : 'Unknown error' },
         };
         if (sender.tab?.id) {
@@ -211,6 +276,14 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
         }
         return errorResponse;
       }
+    }
+
+    case 'CLEAR_CACHE': {
+      console.log('[AuroraWrite] Clearing provider cache');
+      const settings = await getSettings();
+      const provider = getActiveProvider(settings);
+      provider.clearCache();
+      return { type: 'CACHE_CLEARED' };
     }
 
     default:

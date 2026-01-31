@@ -29,6 +29,7 @@ export class GroqProvider extends BaseProvider {
     jsonMode: boolean
   ): Promise<string> {
     const model = settings.providerSettings?.providers?.groq?.model || settings.model || this.config.defaultModel;
+    console.log('[AuroraWrite] Using Groq model:', model);
 
     const body: Record<string, unknown> = {
       model,

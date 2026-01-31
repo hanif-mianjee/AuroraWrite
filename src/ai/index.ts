@@ -6,3 +6,6 @@
 
 export { BlockAnalyzer, blockAnalyzer } from './blockAnalyzer';
 export type { BlockAnalysisCallbacks } from './blockAnalyzer';
+
+export { StabilityPassManager, stabilityPassManager } from './stabilityPassManager';
+export type { StabilityPassCallbacks } from './stabilityPassManager';

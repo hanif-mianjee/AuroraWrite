@@ -117,6 +117,45 @@ If no clear errors exist, return:
 Do NOT invent problems.
 Be accurate.`;
 
+/**
+ * Verification prompt for stability passes.
+ * Lighter weight prompt that checks for newly exposed issues
+ * after previous corrections have been applied.
+ * Uses ~60% fewer tokens than full analysis prompt.
+ */
+export const VERIFICATION_SYSTEM_PROMPT = `You are a writing verification agent.
+
+Check this text for any REMAINING grammar, tense, agreement, or clarity issues that may have appeared after previous corrections.
+
+FOCUS ONLY ON:
+- Subject-verb agreement errors
+- Tense consistency issues
+- Pronoun-antecedent agreement
+- Article usage (a/an/the)
+- Sentence fragments or run-ons
+- Word form errors (adjective vs adverb)
+
+DO NOT FLAG:
+- Style preferences
+- Minor clarity improvements
+- Tone adjustments
+
+Return ONLY newly discovered issues. If none exist, return an empty list.
+
+OUTPUT FORMAT (JSON only, no markdown):
+{
+  "issues": [
+    {
+      "category": "grammar",
+      "originalText": "exact text",
+      "suggestedText": "corrected text",
+      "explanation": "Brief reason. Confidence: 0.90"
+    }
+  ]
+}
+
+If text is correct, return: {"issues": []}`;
+
 export const TRANSFORM_BASE_RULES = `
 You are a high-precision text transformation engine.
 
@@ -205,8 +244,10 @@ export abstract class BaseProvider implements LLMProvider {
 
     const cached = this.cache.get(text);
     if (cached) {
+      console.log('[AuroraWrite] PROVIDER CACHE HIT - returning cached result with', cached.issues.length, 'issues');
       return this.filterIssues(cached, settings);
     }
+    console.log('[AuroraWrite] PROVIDER CACHE MISS - will call API');
 
     const pendingKey = text;
     const pending = this.pendingRequests.get(pendingKey);
@@ -237,6 +278,9 @@ export abstract class BaseProvider implements LLMProvider {
       .filter(([_, config]) => config.enabled)
       .map(([category]) => category);
 
+    console.log('[AuroraWrite] Enabled categories:', enabledCategories);
+    console.log('[AuroraWrite] Text being analyzed (first 200 chars):', text.substring(0, 200));
+
     const content = await this.callAPI(
       apiKey,
       settings,
@@ -256,6 +300,46 @@ export abstract class BaseProvider implements LLMProvider {
     };
 
     this.cache.set(text, result);
+    return this.filterIssues(result, settings);
+  }
+
+  /**
+   * Verify text for stability pass.
+   * Uses a lighter verification prompt to detect newly exposed issues.
+   * Does NOT use cache (we want fresh analysis).
+   */
+  async verifyText(text: string, apiKey: string, settings: Settings): Promise<AnalysisResult> {
+    if (!text.trim() || text.length < 3) {
+      return { text, issues: [], timestamp: Date.now() };
+    }
+
+    if (!this.rateLimiter.canMakeRequest()) {
+      const waitTime = this.rateLimiter.getWaitTime();
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+
+    this.rateLimiter.recordRequest();
+
+    const content = await this.callAPI(
+      apiKey,
+      settings,
+      VERIFICATION_SYSTEM_PROMPT,
+      `Verify this text for remaining issues:\n\n${text}`,
+      true
+    );
+
+    console.log('[AuroraWrite:Stability] Verification response:', content);
+
+    const parsed = this.parseResponse(content, text);
+    console.log('[AuroraWrite:Stability] Verification issues found:', parsed.length);
+
+    const result: AnalysisResult = {
+      text,
+      issues: parsed,
+      timestamp: Date.now(),
+    };
+
+    // Don't cache verification results - they're context-dependent
     return this.filterIssues(result, settings);
   }
 

@@ -8,6 +8,13 @@
 import { inputTextStore, DirtyBlocksResult } from '../state';
 import type { TextIssue, AnalysisResult } from '../shared/types/analysis';
 
+/**
+ * Generate a unique request ID for race condition prevention.
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
 export interface BlockAnalysisCallbacks {
   onBlockAnalysisStart: (fieldId: string, blockId: string) => void;
   onBlockAnalysisComplete: (fieldId: string, blockId: string, issues: TextIssue[]) => void;
@@ -18,6 +25,7 @@ export interface BlockAnalysisCallbacks {
 interface PendingAnalysis {
   fieldId: string;
   pendingBlocks: Set<string>;
+  blockRequestIds: Map<string, string>; // blockId -> requestId
   callbacks: BlockAnalysisCallbacks;
 }
 
@@ -57,15 +65,22 @@ export class BlockAnalyzer {
 
     // Track pending analysis
     const pendingBlockIds = new Set(result.dirtyBlocks.map((b) => b.id));
+    const blockRequestIds = new Map<string, string>();
+
     this.pendingAnalyses.set(fieldId, {
       fieldId,
       pendingBlocks: pendingBlockIds,
+      blockRequestIds,
       callbacks,
     });
 
     // Send each dirty block for analysis
     for (const block of result.dirtyBlocks) {
+      const requestId = generateRequestId();
+      blockRequestIds.set(block.id, requestId);
+
       inputTextStore.setBlockAnalyzing(fieldId, block.id, true);
+      inputTextStore.setBlockRequestId(fieldId, block.id, requestId);
       callbacks.onBlockAnalysisStart(fieldId, block.id);
 
       const context = inputTextStore.getBlockContext(fieldId, block.id);
@@ -80,6 +95,7 @@ export class BlockAnalyzer {
           previousBlockText: context.previousBlockText,
           nextBlockText: context.nextBlockText,
           blockStartOffset: block.startOffset,
+          requestId,
         },
       });
     }
@@ -93,19 +109,34 @@ export class BlockAnalyzer {
    * @param fieldId - The text field identifier
    * @param blockId - The block identifier
    * @param issues - Issues found in this block (offsets relative to full text)
+   * @param requestId - Optional request ID for validation
    */
-  handleBlockResult(fieldId: string, blockId: string, issues: TextIssue[]): void {
+  handleBlockResult(fieldId: string, blockId: string, issues: TextIssue[], requestId?: string): void {
     const pending = this.pendingAnalyses.get(fieldId);
     if (!pending) return;
 
-    // Update the store with block results
-    inputTextStore.mergeBlockResult(fieldId, blockId, issues);
+    // Validate request ID if provided
+    if (requestId && pending.blockRequestIds.has(blockId)) {
+      const expectedId = pending.blockRequestIds.get(blockId);
+      if (expectedId !== requestId) {
+        console.log(`[AuroraWrite] Discarding stale block result for ${blockId}`);
+        return;
+      }
+    }
+
+    // Update the store with block results (not a stability pass)
+    const accepted = inputTextStore.mergeBlockResult(fieldId, blockId, issues, false, requestId);
+    if (!accepted) {
+      console.log(`[AuroraWrite] Block result rejected for ${blockId}`);
+      return;
+    }
 
     // Notify callback
     pending.callbacks.onBlockAnalysisComplete(fieldId, blockId, issues);
 
     // Remove from pending
     pending.pendingBlocks.delete(blockId);
+    pending.blockRequestIds.delete(blockId);
 
     // Check if all blocks are complete
     if (pending.pendingBlocks.size === 0) {

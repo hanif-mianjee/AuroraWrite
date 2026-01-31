@@ -11,6 +11,7 @@ export class FloatingWidget {
   private state: WidgetState = 'hidden';
   private onCategoryClick: ((category: IssueCategory) => void) | null = null;
   private onAcceptAllSpelling: (() => void) | null = null;
+  private onReanalyze: (() => void) | null = null;
   private isInteracting = false;
 
   setOnCategoryClick(callback: (category: IssueCategory) => void): void {
@@ -19,6 +20,10 @@ export class FloatingWidget {
 
   setOnAcceptAllSpelling(callback: () => void): void {
     this.onAcceptAllSpelling = callback;
+  }
+
+  setOnReanalyze(callback: () => void): void {
+    this.onReanalyze = callback;
   }
 
   isUserInteracting(): boolean {
@@ -97,6 +102,11 @@ export class FloatingWidget {
 
     if (state === 'issues' && counts) {
       this.setupWidgetEvents(content);
+    }
+
+    // Set up reanalyze event for clean state
+    if (state === 'clean') {
+      this.setupCleanStateEvents(content);
     }
   }
 
@@ -253,9 +263,30 @@ export class FloatingWidget {
         gap: 8px;
         padding: 10px 12px;
         color: #059669;
+        cursor: pointer;
+        transition: background 0.15s;
+        position: relative;
+      }
+      .aurora-clean:hover {
+        background: #f9fafb;
       }
       .aurora-check {
         font-size: 14px;
+        transition: opacity 0.15s;
+      }
+      .aurora-refresh {
+        font-size: 14px;
+        position: absolute;
+        left: 12px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        color: #6366f1;
+      }
+      .aurora-clean:hover .aurora-check {
+        opacity: 0;
+      }
+      .aurora-clean:hover .aurora-refresh {
+        opacity: 1;
       }
       .aurora-error {
         display: flex;
@@ -320,15 +351,10 @@ export class FloatingWidget {
     }
 
     if (state === 'clean') {
-      // return `
-      //   <div class="aurora-clean">
-      //     <span class="aurora-check">✓</span>
-      //     <span>All good</span>
-      //   </div>
-      // `;
       return `
-        <div class="aurora-clean">
+        <div class="aurora-clean" data-action="reanalyze" title="Click to re-analyze">
           <span class="aurora-check">✓</span>
+          <span class="aurora-refresh">↻</span>
         </div>
       `;
     }
@@ -394,6 +420,18 @@ export class FloatingWidget {
         e.stopPropagation();
         if (this.onAcceptAllSpelling) {
           this.onAcceptAllSpelling();
+        }
+      });
+    }
+  }
+
+  private setupCleanStateEvents(content: HTMLElement): void {
+    const cleanDiv = content.querySelector('.aurora-clean[data-action="reanalyze"]');
+    if (cleanDiv) {
+      cleanDiv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onReanalyze) {
+          this.onReanalyze();
         }
       });
     }
