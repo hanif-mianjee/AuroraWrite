@@ -7,37 +7,119 @@ import { CacheManager } from './cache-manager';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const DEFAULT_MODEL = 'llama-3.1-8b-instant';
 
-const SYSTEM_PROMPT = `You are a strict proofreader. Find ALL errors in ONE pass. Be conservative—only flag clear mistakes.
+const SYSTEM_PROMPT = `You are a strict, deterministic proofreading and tone-analysis engine. Your job is to FIND and EXTRACT real, objective writing issues — not to rewrite good writing.
 
-CATEGORIES (be strict):
-• spelling: ONLY actual typos/misspellings. Single misspelled WORDS only, not sentences. Examples: "teh"→"the", "recieve"→"receive", "definately"→"definitely"
-• grammar: Clear grammatical errors. Examples: "he go"→"he goes", "a apple"→"an apple", "their going"→"they're going"
-• style: Repeated words, double spaces. Examples: "the the"→"the", "very very"→"very"
-• clarity: Wordy phrases that have standard shorter forms. Examples: "in order to"→"to", "due to the fact that"→"because"
-• rephrase: ONLY for genuinely awkward/unclear sentences. Do NOT suggest alternatives to correct text.
+Scan the ENTIRE input and report ALL valid issues in ONE pass.
 
-CRITICAL RULES:
-1. Find ALL issues in the text at once—do not hold back issues for later
-2. originalText must EXACTLY match text from input (character-for-character)
-3. suggestedText must be DIFFERENT from originalText (if they're the same, don't include it)
-4. For spelling: originalText should be the misspelled WORD only, not the whole sentence
-5. Do NOT flag correct text. If unsure, skip it.
-6. Do NOT suggest stylistic alternatives to correct writing
-7. Be conservative: fewer false positives is better than catching everything
+Your priority is HIGH PRECISION.
+If unsure, SKIP it.
 
-OUTPUT FORMAT (strict JSON):
+-------------------
+CATEGORIES (STRICT DEFINITIONS)
+-------------------
+
+• spelling  
+ONLY actual typos or misspellings of single words.  
+Must be ONE word only — never a phrase or sentence.  
+Examples:  
+"teh" → "the"  
+"recieve" → "receive"  
+
+• grammar  
+Clear, rule-based grammatical errors.  
+Examples:  
+"he go" → "he goes"  
+"a apple" → "an apple"  
+"She don't" → "She doesn't"
+
+• style  
+Mechanical or formatting problems only:  
+- Repeated words: "the the"  
+- Double spaces  
+- Obvious punctuation duplication: "??", "!!"  
+
+• clarity  
+Widely accepted wordy phrases with standard shorter forms.  
+Examples:  
+"in order to" → "to"  
+"due to the fact that" → "because"
+
+• tone  
+ONLY flag when tone is objectively harsh, aggressive, commanding, or unprofessional.
+
+Allowed triggers:  
+- Direct commands without politeness markers: "Do this now", "Fix this"  
+- Accusatory phrasing: "This is wrong", "You failed to"  
+- Dismissive language: "Obviously", "Clearly you don't"  
+
+Tone suggestions must:  
+- Preserve meaning  
+- Add professionalism or politeness  
+- NOT add emotion or flattery
+
+Examples:  
+"Do this now." → "Please do this when you can."  
+"This is wrong." → "This doesn't seem correct."
+
+• rephrase  
+ONLY when a sentence is structurally broken or genuinely unclear.  
+This is a LAST RESORT.
+
+-------------------
+CRITICAL EXTRACTION RULES
+-------------------
+
+1. Find ALL valid issues in one response.  
+2. originalText MUST be an EXACT substring from the input.  
+3. suggestedText MUST be different.  
+4. Do NOT overlap issues.  
+5. Extract the SMALLEST valid span.  
+6. Do NOT flag correct text.  
+7. False positives are worse than missed issues.
+
+-------------------
+CONFIDENCE SCORING
+-------------------
+
+For EVERY issue, append a numeric confidence score between 0.00 and 1.00 at the END of the explanation in this format:
+
+"Confidence: X.XX"
+
+Rules:  
+- 0.90–1.00 = clear, objective error (spelling, hard grammar)  
+- 0.70–0.89 = strong but contextual (tone, clarity)  
+- Below 0.70 = DO NOT INCLUDE the issue
+
+-------------------
+OUTPUT RULES
+-------------------
+
+Return ONLY valid JSON.  
+No markdown. No commentary.
+
+FORMAT:
 {
   "issues": [
     {
-      "category": "spelling|grammar|style|clarity|rephrase",
+      "category": "spelling|grammar|style|clarity|tone|rephrase",
       "originalText": "exact text from input",
-      "suggestedText": "corrected text (must be different)",
-      "explanation": "Brief reason"
+      "suggestedText": "corrected text",
+      "explanation": "Brief factual reason. Confidence: 0.00"
     }
   ]
 }
 
-If text has no errors, return: {"issues": []}`;
+-------------------
+ZERO-ISSUE RULE
+-------------------
+
+If no clear errors exist, return:
+{"issues": []}
+
+Do NOT invent problems.
+Be accurate.`;
+
+
 
 interface GroqResponse {
   issues: Array<{
@@ -376,19 +458,87 @@ export class GroqClient {
     return content.trim();
   }
 
-  private getTransformPrompt(type: TransformationType, customPrompt?: string): string {
-    const prompts: Record<TransformationType, string> = {
-      improve: `You are a writing improvement assistant. Improve the following text by fixing any errors and enhancing clarity while preserving the original meaning and tone. Output ONLY the improved text, nothing else.`,
-      rephrase: `You are a writing assistant. Rephrase the following text to express the same meaning in a different way. Keep the same tone and level of formality. Output ONLY the rephrased text, nothing else.`,
-      translate: `You are a translation assistant. Auto-detect the source language and translate the following text to English. If the text is already in English, translate it to Spanish. Output ONLY the translated text, nothing else.`,
-      shorten: `You are a writing assistant. Shorten the following text while preserving the key meaning and information. Make it more concise. Output ONLY the shortened text, nothing else.`,
-      friendly: `You are a writing assistant. Rewrite the following text to sound more friendly and casual while keeping the same meaning. Output ONLY the rewritten text, nothing else.`,
-      formal: `You are a writing assistant. Rewrite the following text to sound more formal and professional while keeping the same meaning. Output ONLY the rewritten text, nothing else.`,
-      custom: customPrompt
-        ? `${customPrompt}\n\nApply this to the following text. Output ONLY the transformed text, nothing else.`
-        : `Transform the following text as requested. Output ONLY the transformed text, nothing else.`,
-    };
+  // private getTransformPrompt(type: TransformationType, customPrompt?: string): string {
+  //   const prompts: Record<TransformationType, string> = {
+  //     improve: `You are a writing improvement assistant. Improve the following text by fixing any errors and enhancing clarity while preserving the original meaning and tone. Output ONLY the improved text, nothing else.`,
+  //     rephrase: `You are a writing assistant. Rephrase the following text to express the same meaning in a different way. Keep the same tone and level of formality. Output ONLY the rephrased text, nothing else.`,
+  //     translate: `You are a translation assistant. Auto-detect the source language and translate the following text to English. If the text is already in English, translate it to Spanish. Output ONLY the translated text, nothing else.`,
+  //     shorten: `You are a writing assistant. Shorten the following text while preserving the key meaning and information. Make it more concise. Output ONLY the shortened text, nothing else.`,
+  //     friendly: `You are a writing assistant. Rewrite the following text to sound more friendly and casual while keeping the same meaning. Output ONLY the rewritten text, nothing else.`,
+  //     formal: `You are a writing assistant. Rewrite the following text to sound more formal and professional while keeping the same meaning. Output ONLY the rewritten text, nothing else.`,
+  //     custom: customPrompt
+  //       ? `${customPrompt}\n\nApply this to the following text. Output ONLY the transformed text, nothing else.`
+  //       : `Transform the following text as requested. Output ONLY the transformed text, nothing else.`,
+  //   };
 
-    return prompts[type] || prompts.improve;
-  }
+  //   return prompts[type] || prompts.improve;
+  // }
+  private getTransformPrompt(type: TransformationType, customPrompt?: string): string {
+  const baseRules = `
+    You are a high-precision text transformation engine.
+
+    GLOBAL RULES:
+    - Preserve the original meaning exactly
+    - Do NOT add new facts, opinions, or assumptions
+    - Do NOT remove important details
+    - Do NOT explain your changes
+    - Do NOT include quotes, markdown, or commentary
+    - Output ONLY the transformed text
+    - Keep formatting, punctuation style, and line breaks unless the transformation requires changing them
+    - If the input is already optimal for the requested transformation, return it unchanged
+    `;
+
+      const prompts: Record<TransformationType, string> = {
+        improve: `${baseRules}
+    TASK:
+    Fix grammar, spelling, and clarity issues.
+    Make the text more fluent and professional WITHOUT changing tone or intent.
+    Avoid stylistic rewriting unless it improves readability or correctness.`,
+
+        rephrase: `${baseRules}
+    TASK:
+    Rewrite the text using different wording while preserving meaning, tone, and level of formality.
+    Do NOT simplify or embellish.
+    Maintain approximately the same length.`,
+
+        translate: `${baseRules}
+    TASK:
+    Auto-detect the source language.
+    If the text is NOT English, translate it into natural, fluent English.
+    If the text IS English, translate it into natural, fluent Spanish.
+    Preserve formatting and structure.`,
+
+        shorten: `${baseRules}
+    TASK:
+    Reduce the length of the text while preserving all key information and intent.
+    Remove redundancy and filler.
+    Do NOT remove essential details.
+    Aim for at least 30% reduction unless the text is already concise.`,
+
+        friendly: `${baseRules}
+    TASK:
+    Make the text sound friendly, approachable, and conversational.
+    Keep professionalism where appropriate.
+    Avoid slang, emojis, or excessive informality.
+    Preserve the original message and intent.`,
+
+        formal: `${baseRules}
+    TASK:
+    Make the text sound formal, professional, and business-appropriate.
+    Avoid casual language, contractions, and colloquial phrasing.
+    Preserve meaning and structure.`,
+
+        custom: customPrompt
+          ? `${baseRules}
+    CUSTOM TASK:
+    ${customPrompt}
+    Apply this instruction to the following text.`
+          : `${baseRules}
+    TASK:
+    Transform the following text as requested.`,
+      };
+
+      return prompts[type] || prompts.improve;
+    }
+
 }
