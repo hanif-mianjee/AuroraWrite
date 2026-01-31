@@ -1,11 +1,11 @@
 import type { AnalysisResult, TextIssue, IssueCategory } from '../shared/types/analysis';
 import type { Settings } from '../shared/types/settings';
+import type { TransformationType } from '../shared/types/messages';
 import { RateLimiter } from './rate-limiter';
 import { CacheManager } from './cache-manager';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-// Best quality model - upgrade Groq plan if hitting rate limits
-const MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'llama-3.1-8b-instant';
 
 const SYSTEM_PROMPT = `You are a precise writing assistant. Detect errors and suggest improvements.
 
@@ -101,7 +101,7 @@ export class GroqClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: settings.model || DEFAULT_MODEL,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: `Analyze this text for issues. Only report issues in these categories: ${enabledCategories.join(', ')}\n\nText:\n${text}` },
@@ -285,7 +285,7 @@ export class GroqClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: MODEL,
+          model: DEFAULT_MODEL,
           messages: [{ role: 'user', content: 'Hi' }],
           max_tokens: 1,
         }),
@@ -299,5 +299,85 @@ export class GroqClient {
 
   clearCache(): void {
     this.cache.clear();
+  }
+
+  async transformText(
+    text: string,
+    transformationType: TransformationType,
+    apiKey: string,
+    settings: Settings,
+    customPrompt?: string
+  ): Promise<string> {
+    if (!this.rateLimiter.canMakeRequest()) {
+      const waitTime = this.rateLimiter.getWaitTime();
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+
+    this.rateLimiter.recordRequest();
+
+    const systemPrompt = this.getTransformPrompt(transformationType, customPrompt);
+
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: settings.model || DEFAULT_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text },
+        ],
+        temperature: 0.3,
+        max_tokens: 2048,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      if (response.status === 429) {
+        try {
+          const errorJson = JSON.parse(errorText);
+          const message = errorJson.error?.message || '';
+          const waitMatch = message.match(/try again in (\d+m\d+)/);
+          const waitTime = waitMatch ? waitMatch[1] : '5 minutes';
+          throw new Error(`Rate limit reached. Please wait ${waitTime}.`);
+        } catch (e) {
+          if (e instanceof Error && e.message.includes('Rate limit')) {
+            throw e;
+          }
+          throw new Error('Rate limit reached. Please wait a few minutes.');
+        }
+      }
+
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('Empty response from API');
+    }
+
+    return content.trim();
+  }
+
+  private getTransformPrompt(type: TransformationType, customPrompt?: string): string {
+    const prompts: Record<TransformationType, string> = {
+      improve: `You are a writing improvement assistant. Improve the following text by fixing any errors and enhancing clarity while preserving the original meaning and tone. Output ONLY the improved text, nothing else.`,
+      rephrase: `You are a writing assistant. Rephrase the following text to express the same meaning in a different way. Keep the same tone and level of formality. Output ONLY the rephrased text, nothing else.`,
+      translate: `You are a translation assistant. Auto-detect the source language and translate the following text to English. If the text is already in English, translate it to Spanish. Output ONLY the translated text, nothing else.`,
+      shorten: `You are a writing assistant. Shorten the following text while preserving the key meaning and information. Make it more concise. Output ONLY the shortened text, nothing else.`,
+      friendly: `You are a writing assistant. Rewrite the following text to sound more friendly and casual while keeping the same meaning. Output ONLY the rewritten text, nothing else.`,
+      formal: `You are a writing assistant. Rewrite the following text to sound more formal and professional while keeping the same meaning. Output ONLY the rewritten text, nothing else.`,
+      custom: customPrompt
+        ? `${customPrompt}\n\nApply this to the following text. Output ONLY the transformed text, nothing else.`
+        : `Transform the following text as requested. Output ONLY the transformed text, nothing else.`,
+    };
+
+    return prompts[type] || prompts.improve;
   }
 }

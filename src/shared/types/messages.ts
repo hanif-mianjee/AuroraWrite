@@ -8,7 +8,12 @@ export type MessageType =
   | 'SETTINGS_RESPONSE'
   | 'VALIDATE_API_KEY'
   | 'API_KEY_VALID'
-  | 'API_KEY_INVALID';
+  | 'API_KEY_INVALID'
+  | 'TRANSFORM_TEXT'
+  | 'TRANSFORM_RESULT'
+  | 'TRANSFORM_ERROR';
+
+export type TransformationType = 'improve' | 'rephrase' | 'translate' | 'shorten' | 'friendly' | 'formal' | 'custom';
 
 export interface AnalyzeTextMessage {
   type: 'ANALYZE_TEXT';
@@ -61,6 +66,33 @@ export interface ApiKeyInvalidMessage {
   };
 }
 
+export interface TransformTextMessage {
+  type: 'TRANSFORM_TEXT';
+  payload: {
+    text: string;
+    transformationType: TransformationType;
+    customPrompt?: string;
+    requestId: string;
+  };
+}
+
+export interface TransformResultMessage {
+  type: 'TRANSFORM_RESULT';
+  payload: {
+    requestId: string;
+    originalText: string;
+    transformedText: string;
+  };
+}
+
+export interface TransformErrorMessage {
+  type: 'TRANSFORM_ERROR';
+  payload: {
+    requestId: string;
+    error: string;
+  };
+}
+
 export type Message =
   | AnalyzeTextMessage
   | AnalysisResultMessage
@@ -69,6 +101,9 @@ export type Message =
   | SettingsResponseMessage
   | ValidateApiKeyMessage
   | ApiKeyValidMessage
-  | ApiKeyInvalidMessage;
+  | ApiKeyInvalidMessage
+  | TransformTextMessage
+  | TransformResultMessage
+  | TransformErrorMessage;
 
 import type { Settings } from './settings';

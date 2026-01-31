@@ -1,6 +1,6 @@
 import { GroqClient } from './groq-client';
 import { getSettings, getApiKey } from '../shared/utils/storage';
-import type { Message, AnalysisResultMessage, AnalysisErrorMessage } from '../shared/types/messages';
+import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage } from '../shared/types/messages';
 
 console.log('[AuroraWrite] Background service worker starting');
 
@@ -80,6 +80,47 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
         return { type: 'API_KEY_VALID' };
       }
       return { type: 'API_KEY_INVALID', payload: { error: 'Invalid API key' } };
+    }
+
+    case 'TRANSFORM_TEXT': {
+      const { text, transformationType, customPrompt, requestId } = message.payload;
+      console.log('[AuroraWrite] TRANSFORM_TEXT request:', requestId, transformationType);
+
+      const apiKey = await getApiKey();
+      if (!apiKey) {
+        const errorResponse: TransformErrorMessage = {
+          type: 'TRANSFORM_ERROR',
+          payload: { requestId, error: 'API key not configured. Please set your Groq API key in extension options.' },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
+        }
+        return errorResponse;
+      }
+
+      try {
+        const settings = await getSettings();
+        const transformedText = await groqClient.transformText(text, transformationType, apiKey, settings, customPrompt);
+        console.log('[AuroraWrite] Transform complete');
+        const response: TransformResultMessage = {
+          type: 'TRANSFORM_RESULT',
+          payload: { requestId, originalText: text, transformedText },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, response);
+        }
+        return response;
+      } catch (error) {
+        console.error('[AuroraWrite] Transform error:', error);
+        const errorResponse: TransformErrorMessage = {
+          type: 'TRANSFORM_ERROR',
+          payload: { requestId, error: error instanceof Error ? error.message : 'Unknown error' },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
+        }
+        return errorResponse;
+      }
     }
 
     default:

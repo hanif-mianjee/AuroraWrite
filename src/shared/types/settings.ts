@@ -7,6 +7,7 @@ export interface CategorySettings {
 
 export interface Settings {
   apiKey: string;
+  model: string;
   categories: Record<IssueCategory, CategorySettings>;
   ignoredWords: string[];
   enabledSites: 'all' | 'whitelist';
@@ -15,6 +16,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
+  model: 'llama-3.1-8b-instant',
   categories: {
     spelling: { enabled: true, sensitivity: 'high' },
     grammar: { enabled: true, sensitivity: 'high' },
