@@ -134,7 +134,7 @@ export class FloatingWidget {
         border-radius: 10px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
         border: 1px solid rgba(0,0,0,0.08);
-        min-width: 48px;
+        min-width: 180px;
         user-select: none;
         overflow: hidden;
       }
@@ -178,11 +178,16 @@ export class FloatingWidget {
         background: #d1fae5;
         color: #059669;
       }
+      .aurora-header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
       .aurora-expand-icon {
         font-size: 10px;
         color: #9ca3af;
         transition: transform 0.2s;
-        margin-left: auto;
       }
       .aurora-widget.expanded .aurora-expand-icon {
         transform: rotate(180deg);
@@ -338,8 +343,10 @@ export class FloatingWidget {
       <div class="aurora-widget-header">
         <div class="aurora-logo">A</div>
         <span class="aurora-title">Aurora</span>
-        <span class="aurora-total">${counts.total} issue${counts.total > 1 ? 's' : ''}</span>
-        <span class="aurora-expand-icon">▼</span>
+        <div class="aurora-header-right">
+          <span class="aurora-total">${counts.total} issue${counts.total > 1 ? 's' : ''}</span>
+          <span class="aurora-expand-icon">▼</span>
+        </div>
       </div>
       <div class="aurora-categories">
         ${categoryRows}

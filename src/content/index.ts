@@ -4,31 +4,41 @@ import { ContentEditableHandler } from './detector/contenteditable-handler';
 import { OverlayManager } from './overlay/overlay-manager';
 import { FloatingWidget } from './widget/floating-widget';
 import { SuggestionPopover } from './popover/suggestion-popover';
+import { SelectionHandler, SelectionTrigger, TransformPopover, type SelectionContext } from './selection';
 import { debounce } from '../shared/utils/debounce';
 import { addIgnoredWord } from '../shared/utils/storage';
 import type { TextIssue, AnalysisResult, IssueCategory } from '../shared/types/analysis';
-import type { Message, AnalysisResultMessage, AnalysisErrorMessage } from '../shared/types/messages';
+import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, TransformationType } from '../shared/types/messages';
 
 class AuroraWrite {
   private detector: TextFieldDetector;
   private overlayManager: OverlayManager;
   private widget: FloatingWidget;
   private popover: SuggestionPopover;
+  private selectionHandler: SelectionHandler;
+  private selectionTrigger: SelectionTrigger;
+  private transformPopover: TransformPopover;
   private activeFieldId: string | null = null;
   private lastActiveFieldId: string | null = null;
   private pendingAnalysis: Map<string, AbortController> = new Map();
   private handlers: Map<string, TextareaHandler | ContentEditableHandler> = new Map();
+  private currentSelectionContext: SelectionContext | null = null;
+  private pendingTransformRequestId: string | null = null;
 
   constructor() {
     this.detector = new TextFieldDetector();
     this.overlayManager = new OverlayManager();
     this.widget = new FloatingWidget();
     this.popover = new SuggestionPopover();
+    this.selectionHandler = new SelectionHandler();
+    this.selectionTrigger = new SelectionTrigger();
+    this.transformPopover = new TransformPopover();
 
     this.setupMessageListener();
     this.setupOverlayEvents();
     this.setupWidgetEvents();
     this.setupPopoverEvents();
+    this.setupSelectionEvents();
   }
 
   start(): void {
@@ -147,6 +157,12 @@ class AuroraWrite {
         case 'ANALYSIS_ERROR':
           this.handleAnalysisError(message as AnalysisErrorMessage);
           break;
+        case 'TRANSFORM_RESULT':
+          this.handleTransformResult(message as TransformResultMessage);
+          break;
+        case 'TRANSFORM_ERROR':
+          this.handleTransformError(message as TransformErrorMessage);
+          break;
       }
     });
   }
@@ -230,6 +246,128 @@ class AuroraWrite {
       onIgnore: (issue) => this.ignoreIssue(issue),
       onIgnoreAll: (issue) => this.ignoreAllSimilar(issue),
     });
+  }
+
+  private setupSelectionEvents(): void {
+    console.log('[AuroraWrite] Setting up selection events');
+    this.selectionHandler.setOnSelect((context) => {
+      console.log('[AuroraWrite] onSelect callback fired, text:', context.text.substring(0, 30));
+      // Don't show trigger if transform popover is visible
+      if (this.transformPopover.isVisible()) {
+        console.log('[AuroraWrite] Transform popover visible, not showing trigger');
+        return;
+      }
+      this.currentSelectionContext = context;
+      console.log('[AuroraWrite] Calling selectionTrigger.show');
+      this.selectionTrigger.show(context.rects);
+    });
+
+    this.selectionHandler.setOnClear(() => {
+      // Don't hide if transform popover is visible
+      if (!this.transformPopover.isVisible()) {
+        this.selectionTrigger.hide();
+        this.currentSelectionContext = null;
+      }
+    });
+
+    this.selectionTrigger.setOnClick(() => {
+      if (this.currentSelectionContext) {
+        this.selectionTrigger.hide();
+        this.transformPopover.show(this.currentSelectionContext.text, this.currentSelectionContext.rects);
+      }
+    });
+
+    this.transformPopover.setCallbacks({
+      onTransform: (type, customPrompt) => this.requestTransform(type, customPrompt),
+      onAccept: (transformedText) => this.acceptTransform(transformedText),
+      onCancel: () => this.cancelTransform(),
+    });
+  }
+
+  private requestTransform(type: TransformationType, customPrompt?: string): void {
+    if (!this.currentSelectionContext) return;
+
+    const requestId = `transform_${Date.now()}`;
+    this.pendingTransformRequestId = requestId;
+
+    chrome.runtime.sendMessage({
+      type: 'TRANSFORM_TEXT',
+      payload: {
+        text: this.currentSelectionContext.text,
+        transformationType: type,
+        customPrompt,
+        requestId,
+      },
+    });
+  }
+
+  private handleTransformResult(message: TransformResultMessage): void {
+    const { requestId, transformedText } = message.payload;
+
+    if (requestId !== this.pendingTransformRequestId) {
+      return;
+    }
+
+    this.transformPopover.updateWithResult(transformedText);
+  }
+
+  private handleTransformError(message: TransformErrorMessage): void {
+    const { requestId, error } = message.payload;
+
+    if (requestId !== this.pendingTransformRequestId) {
+      return;
+    }
+
+    this.transformPopover.updateWithError(error);
+  }
+
+  private acceptTransform(transformedText: string): void {
+    if (!this.currentSelectionContext) {
+      this.transformPopover.hide();
+      return;
+    }
+
+    const { isEditable, editableElement, range } = this.currentSelectionContext;
+
+    if (isEditable && editableElement) {
+      this.replaceSelectionText(editableElement, range, transformedText);
+    }
+
+    this.transformPopover.hide();
+    this.selectionHandler.clearSelection();
+    this.currentSelectionContext = null;
+    this.pendingTransformRequestId = null;
+  }
+
+  private cancelTransform(): void {
+    this.transformPopover.hide();
+    this.selectionHandler.clearSelection();
+    this.currentSelectionContext = null;
+    this.pendingTransformRequestId = null;
+  }
+
+  private replaceSelectionText(element: HTMLElement, range: Range, newText: string): void {
+    if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) {
+      // For textarea/input, use value manipulation
+      const start = element.selectionStart ?? 0;
+      const end = element.selectionEnd ?? 0;
+      const value = element.value;
+      element.value = value.substring(0, start) + newText + value.substring(end);
+      element.selectionStart = element.selectionEnd = start + newText.length;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      // For contenteditable, use Range API
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const currentRange = selection.getRangeAt(0);
+        currentRange.deleteContents();
+        currentRange.insertNode(document.createTextNode(newText));
+        currentRange.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(currentRange);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
   }
 
   private showPopoverForIssue(issue: TextIssue, fieldId: string): void {
@@ -328,6 +466,9 @@ class AuroraWrite {
     this.overlayManager.destroy();
     this.widget.destroy();
     this.popover.destroy();
+    this.selectionHandler.destroy();
+    this.selectionTrigger.destroy();
+    this.transformPopover.destroy();
 
     for (const handler of this.handlers.values()) {
       handler.destroy();

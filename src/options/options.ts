@@ -19,6 +19,11 @@ class OptionsPage {
     const apiKeyInput = document.getElementById('api-key') as HTMLInputElement;
     apiKeyInput.value = this.settings.apiKey;
 
+    const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
+    if (modelSelect) {
+      modelSelect.value = this.settings.model || 'llama-3.1-8b-instant';
+    }
+
     for (const category of CATEGORIES) {
       const config = this.settings.categories[category];
       const checkbox = document.getElementById(`cat-${category}`) as HTMLInputElement;
@@ -163,7 +168,10 @@ class OptionsPage {
       };
     }
 
-    await saveSettings({ categories });
+    const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
+    const model = modelSelect?.value || 'llama-3.1-8b-instant';
+
+    await saveSettings({ categories, model });
     this.settings = await getSettings();
 
     const statusEl = document.getElementById('save-status');
