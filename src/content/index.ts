@@ -7,8 +7,11 @@ import { SuggestionPopover } from './popover/suggestion-popover';
 import { SelectionHandler, SelectionTrigger, TransformPopover, type SelectionContext } from './selection';
 import { debounce } from '../shared/utils/debounce';
 import { addIgnoredWord } from '../shared/utils/storage';
+import { performanceLogger } from '../shared/utils/performance';
+import { blockAnalyzer } from '../ai';
+import { inputTextStore } from '../state';
 import type { TextIssue, AnalysisResult, IssueCategory } from '../shared/types/analysis';
-import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, TransformationType } from '../shared/types/messages';
+import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, TransformationType, BlockResultMessage, BlockErrorMessage } from '../shared/types/messages';
 
 class AuroraWrite {
   private detector: TextFieldDetector;
@@ -107,7 +110,7 @@ class AuroraWrite {
   private createInputHandler(field: TextFieldInfo): () => void {
     const debouncedAnalyze = debounce(() => {
       this.analyzeField(field);
-    }, 2000); // 2 second debounce to reduce API calls
+    }, 700); // 700ms debounce as per incremental architecture spec
 
     return debouncedAnalyze;
   }
@@ -124,24 +127,62 @@ class AuroraWrite {
       return;
     }
 
-    const existing = this.pendingAnalysis.get(field.id);
-    if (existing) {
-      existing.abort();
-    }
+    // Cancel any existing analysis
+    blockAnalyzer.cancelAnalysis(field.id);
 
-    const controller = new AbortController();
-    this.pendingAnalysis.set(field.id, controller);
+    // Start performance tracking
+    performanceLogger.startAnalysis(field.id);
 
     // Show loading state
     this.widget.showLoading(field.element);
 
     try {
-      chrome.runtime.sendMessage({
-        type: 'ANALYZE_TEXT',
-        payload: { text, fieldId: field.id },
+      // Use incremental block-based analysis
+      const result = blockAnalyzer.analyzeText(field.id, text, {
+        onBlockAnalysisStart: (fieldId, blockId) => {
+          console.log(`[AuroraWrite] Block analysis started: ${blockId}`);
+        },
+        onBlockAnalysisComplete: (fieldId, blockId, issues) => {
+          console.log(`[AuroraWrite] Block analysis complete: ${blockId}, issues: ${issues.length}`);
+          // Update overlay incrementally as each block completes
+          const allIssues = inputTextStore.getAllIssues(fieldId);
+          this.overlayManager.updateAnalysis(fieldId, {
+            text,
+            issues: allIssues,
+            timestamp: Date.now(),
+          });
+          if (this.activeFieldId === fieldId) {
+            this.widget.update(allIssues);
+          }
+        },
+        onBlockAnalysisError: (fieldId, blockId, error) => {
+          console.error(`[AuroraWrite] Block ${blockId} analysis error:`, error);
+        },
+        onAllBlocksComplete: (fieldId, analysisResult) => {
+          console.log(`[AuroraWrite] All blocks complete for field ${fieldId}, total issues: ${analysisResult.issues.length}`);
+          this.overlayManager.updateAnalysis(fieldId, analysisResult);
+          if (this.activeFieldId === fieldId) {
+            this.widget.update(analysisResult.issues);
+          }
+        },
       });
+
+      // Record performance metrics
+      performanceLogger.recordAnalysis(
+        field.id,
+        result.allBlocks.length,
+        result.dirtyBlocks.length,
+        result.cleanBlocks.length
+      );
+
+      // If no dirty blocks, the callback is called synchronously
+      if (result.dirtyBlocks.length === 0) {
+        console.log('[AuroraWrite] No dirty blocks, using cached analysis');
+      } else {
+        console.log(`[AuroraWrite] Analyzing ${result.dirtyBlocks.length} dirty blocks out of ${result.allBlocks.length} total`);
+      }
     } catch (error) {
-      console.error('[AuroraWrite] Failed to send analysis request:', error);
+      console.error('[AuroraWrite] Failed to start block analysis:', error);
     }
   }
 
@@ -153,6 +194,12 @@ class AuroraWrite {
           break;
         case 'ANALYSIS_ERROR':
           this.handleAnalysisError(message as AnalysisErrorMessage);
+          break;
+        case 'BLOCK_RESULT':
+          this.handleBlockResult(message as BlockResultMessage);
+          break;
+        case 'BLOCK_ERROR':
+          this.handleBlockError(message as BlockErrorMessage);
           break;
         case 'TRANSFORM_RESULT':
           this.handleTransformResult(message as TransformResultMessage);
@@ -196,6 +243,27 @@ class AuroraWrite {
         this.widget.showError(field.element, error);
       }
     }
+  }
+
+  private handleBlockResult(message: BlockResultMessage): void {
+    const { fieldId, blockId, issues } = message.payload;
+
+    // Filter out session-ignored issues
+    const sessionIgnored = this.sessionIgnoredIssues.get(fieldId);
+    const filteredIssues = sessionIgnored && sessionIgnored.size > 0
+      ? issues.filter(issue => !sessionIgnored.has(issue.originalText.toLowerCase()))
+      : issues;
+
+    // Delegate to block analyzer
+    blockAnalyzer.handleBlockResult(fieldId, blockId, filteredIssues);
+  }
+
+  private handleBlockError(message: BlockErrorMessage): void {
+    const { fieldId, blockId, error } = message.payload;
+    console.error(`[AuroraWrite] Block analysis error for field ${fieldId}, block ${blockId}:`, error);
+
+    // Delegate to block analyzer
+    blockAnalyzer.handleBlockError(fieldId, blockId, error);
   }
 
   private setupOverlayEvents(): void {
@@ -260,8 +328,22 @@ class AuroraWrite {
       this.overlayManager.removeIssue(fieldId, issue.id);
     }
 
-    // Update widget with remaining issues
-    const remainingIssues = this.overlayManager.getIssuesForField(fieldId);
+    // Apply local changes to the store for each issue (sorted by offset descending)
+    // This prevents triggering AI analysis for accepted suggestions
+    for (const issue of sortedIssues) {
+      inputTextStore.removeIssue(fieldId, issue.id);
+    }
+
+    // Force update the store with the new text (mark all blocks as analyzed)
+    const handler = this.handlers.get(fieldId);
+    if (handler) {
+      const newText = handler.getText();
+      // Re-split into blocks with the new text, preserving analyzed status
+      inputTextStore.updateText(fieldId, newText);
+    }
+
+    // Update widget with remaining issues from the store
+    const remainingIssues = inputTextStore.getAllIssues(fieldId);
     this.widget.update(remainingIssues);
   }
 
@@ -429,11 +511,20 @@ class AuroraWrite {
     // Now replace the text
     this.overlayManager.replaceText(fieldId, issue);
 
-    // Update widget with remaining issues
-    const remainingIssues = this.overlayManager.getIssuesForField(fieldId);
-    this.widget.update(remainingIssues);
+    // Get the new text after replacement
+    const handler = this.handlers.get(fieldId);
+    if (handler) {
+      const newText = handler.getText();
+      // Apply the change locally in the store WITHOUT triggering AI analysis
+      inputTextStore.applyLocalChange(fieldId, issue, newText);
+    }
 
-    // Don't manually re-analyze - the input event will trigger the debounced analysis
+    // Record that we avoided an API call
+    performanceLogger.recordSuggestionAcceptance(fieldId);
+
+    // Update widget with remaining issues from the store
+    const remainingIssues = inputTextStore.getAllIssues(fieldId);
+    this.widget.update(remainingIssues);
   }
 
   private ignoreIssue(issue: TextIssue): void {
@@ -454,8 +545,11 @@ class AuroraWrite {
     // Remove the issue from overlay (removes underline immediately)
     this.overlayManager.removeIssue(fieldId, issue.id);
 
-    // Update widget with remaining issues
-    const updatedIssues = this.overlayManager.getIssuesForField(fieldId);
+    // Also remove from the input text store
+    inputTextStore.removeIssue(fieldId, issue.id);
+
+    // Update widget with remaining issues from the store
+    const updatedIssues = inputTextStore.getAllIssues(fieldId);
     this.widget.update(updatedIssues);
   }
 
@@ -471,18 +565,23 @@ class AuroraWrite {
       for (const i of issues) {
         if (i.originalText.toLowerCase() === issue.originalText.toLowerCase()) {
           this.overlayManager.removeIssue(field.id, i.id);
+          // Also remove from the input text store
+          inputTextStore.removeIssue(field.id, i.id);
         }
       }
     }
 
-    // Update widget with remaining issues
+    // Update widget with remaining issues from the store
     const fieldId = this.activeFieldId || this.lastActiveFieldId;
     if (fieldId) {
-      this.widget.update(this.overlayManager.getIssuesForField(fieldId));
+      this.widget.update(inputTextStore.getAllIssues(fieldId));
     }
   }
 
   destroy(): void {
+    // Log performance summary before destroying
+    performanceLogger.logSummary();
+
     this.detector.stop();
     this.overlayManager.destroy();
     this.widget.destroy();

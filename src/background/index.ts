@@ -1,7 +1,8 @@
 import { LLMFactory } from './providers';
 import { getSettings, getApiKey } from '../shared/utils/storage';
-import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage } from '../shared/types/messages';
+import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, BlockResultMessage, BlockErrorMessage } from '../shared/types/messages';
 import type { LLMProviderType } from '../shared/types/llm';
+import type { TextIssue } from '../shared/types/analysis';
 
 console.log('[AuroraWrite] Background service worker starting');
 
@@ -75,6 +76,73 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
         const errorResponse: AnalysisErrorMessage = {
           type: 'ANALYSIS_ERROR',
           payload: { fieldId, error: error instanceof Error ? error.message : 'Unknown error' },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
+        }
+        return errorResponse;
+      }
+    }
+
+    case 'ANALYZE_BLOCK': {
+      const { fieldId, blockId, blockText, previousBlockText, nextBlockText, blockStartOffset } = message.payload;
+      console.log('[AuroraWrite] ANALYZE_BLOCK for field:', fieldId, 'block:', blockId, 'text length:', blockText.length);
+
+      const settings = await getSettings();
+      const apiKey = await getActiveApiKey(settings);
+      const provider = getActiveProvider(settings);
+
+      if (!apiKey) {
+        const errorResponse: BlockErrorMessage = {
+          type: 'BLOCK_ERROR',
+          payload: { fieldId, blockId, error: `API key not configured. Please set your ${provider.config.name} API key in extension options.` },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
+        }
+        return errorResponse;
+      }
+
+      try {
+        // Analyze just this block with context
+        const contextPrefix = previousBlockText ? `[Previous context: ${previousBlockText.slice(-100)}]\n\n` : '';
+        const contextSuffix = nextBlockText ? `\n\n[Following context: ${nextBlockText.slice(0, 100)}]` : '';
+        const textWithContext = contextPrefix + blockText + contextSuffix;
+
+        const result = await provider.analyzeText(textWithContext, apiKey, settings);
+
+        // Filter issues to only those within the block text (not in context)
+        const contextPrefixLength = contextPrefix.length;
+        const blockEndInContext = contextPrefixLength + blockText.length;
+
+        const blockIssues: TextIssue[] = result.issues
+          .filter(issue => {
+            // Issue must be within the block text portion
+            return issue.startOffset >= contextPrefixLength &&
+                   issue.endOffset <= blockEndInContext;
+          })
+          .map(issue => ({
+            ...issue,
+            // Adjust offsets: remove context prefix, add block's position in full text
+            startOffset: issue.startOffset - contextPrefixLength + blockStartOffset,
+            endOffset: issue.endOffset - contextPrefixLength + blockStartOffset,
+          }));
+
+        console.log('[AuroraWrite] Block analysis complete, issues found:', blockIssues.length);
+
+        const response: BlockResultMessage = {
+          type: 'BLOCK_RESULT',
+          payload: { fieldId, blockId, issues: blockIssues },
+        };
+        if (sender.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, response);
+        }
+        return response;
+      } catch (error) {
+        console.error('[AuroraWrite] Block analysis error:', error);
+        const errorResponse: BlockErrorMessage = {
+          type: 'BLOCK_ERROR',
+          payload: { fieldId, blockId, error: error instanceof Error ? error.message : 'Unknown error' },
         };
         if (sender.tab?.id) {
           chrome.tabs.sendMessage(sender.tab.id, errorResponse);
