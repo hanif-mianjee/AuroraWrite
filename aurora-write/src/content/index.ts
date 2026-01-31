@@ -194,6 +194,34 @@ class AuroraWrite {
         this.showPopoverForIssue(firstIssue, this.activeFieldId);
       }
     });
+
+    this.widget.setOnAcceptAllSpelling(() => {
+      this.acceptAllSpelling();
+    });
+  }
+
+  private acceptAllSpelling(): void {
+    const fieldId = this.activeFieldId || this.lastActiveFieldId;
+    if (!fieldId) return;
+
+    const issues = this.overlayManager.getIssuesForField(fieldId);
+    const spellingIssues = issues
+      .filter(i => i.category === 'spelling' && !i.ignored)
+      .sort((a, b) => b.startOffset - a.startOffset); // Sort by offset descending to apply from end
+
+    if (spellingIssues.length === 0) return;
+
+    console.log('[AuroraWrite] Accepting all spelling issues:', spellingIssues.length);
+
+    // Apply fixes from end to start to preserve offsets
+    for (const issue of spellingIssues) {
+      this.overlayManager.removeIssue(fieldId, issue.id);
+      this.overlayManager.replaceText(fieldId, issue);
+    }
+
+    // Update widget with remaining issues
+    const remainingIssues = this.overlayManager.getIssuesForField(fieldId);
+    this.widget.update(remainingIssues);
   }
 
   private setupPopoverEvents(): void {

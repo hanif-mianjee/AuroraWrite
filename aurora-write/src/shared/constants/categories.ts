@@ -38,6 +38,12 @@ export const CATEGORY_CONFIG: Record<IssueCategory, CategoryConfig> = {
     underlineStyle: 'double',
     description: 'Formality mismatches',
   },
+  rephrase: {
+    name: 'Rephrase',
+    color: '#00bcd4',
+    underlineStyle: 'dotted',
+    description: 'Suggested rewrites for better flow',
+  },
 };
 
 export const ISSUE_CATEGORIES: IssueCategory[] = [
@@ -46,4 +52,5 @@ export const ISSUE_CATEGORIES: IssueCategory[] = [
   'style',
   'clarity',
   'tone',
+  'rephrase',
 ];

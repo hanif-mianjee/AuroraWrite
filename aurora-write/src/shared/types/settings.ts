@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: Settings = {
     style: { enabled: true, sensitivity: 'medium' },
     clarity: { enabled: true, sensitivity: 'medium' },
     tone: { enabled: false, sensitivity: 'low' },
+    rephrase: { enabled: true, sensitivity: 'medium' },
   },
   ignoredWords: [],
   enabledSites: 'all',

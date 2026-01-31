@@ -1,4 +1,4 @@
-export type IssueCategory = 'spelling' | 'grammar' | 'style' | 'clarity' | 'tone';
+export type IssueCategory = 'spelling' | 'grammar' | 'style' | 'clarity' | 'tone' | 'rephrase';
 
 export interface TextIssue {
   id: string;
@@ -28,5 +28,6 @@ export interface IssueCounts {
   style: number;
   clarity: number;
   tone: number;
+  rephrase: number;
   total: number;
 }

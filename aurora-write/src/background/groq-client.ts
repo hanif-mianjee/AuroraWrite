@@ -4,53 +4,37 @@ import { RateLimiter } from './rate-limiter';
 import { CacheManager } from './cache-manager';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// Best quality model - upgrade Groq plan if hitting rate limits
 const MODEL = 'llama-3.3-70b-versatile';
 
-const SYSTEM_PROMPT = `You are a writing assistant that detects errors and improves clarity. Flag real problems.
+const SYSTEM_PROMPT = `You are a precise writing assistant. Detect errors and suggest improvements.
 
-Categories:
-- spelling: Misspelled words (e.g., "teh" → "the", "recieve" → "receive")
-- grammar: Grammatical errors (e.g., "he go" → "he goes", "a apple" → "an apple")
-- style: Double spaces, repeated words, extreme wordiness
-- clarity: Passive voice → active voice, unclear sentences, wordy phrases
+CATEGORIES:
+• spelling: Typos and misspellings ("teh"→"the", "recieve"→"receive")
+• grammar: Subject-verb agreement, articles, tense ("he go"→"he goes", "a apple"→"an apple")
+• style: Double spaces, repeated words ("the the"→"the"), extreme redundancy
+• clarity: Passive voice→active ("was written by John"→"John wrote"), wordy phrases ("in order to"→"to", "due to the fact that"→"because")
+• rephrase: Suggest better ways to express awkward or unclear sentences. Only for sentences that would genuinely benefit from rephrasing—not just alternatives.
 
-MUST catch:
-- Misspellings
-- Grammar mistakes
-- Double spaces ("word  word" → "word word")
-- Repeated words ("the the" → "the")
-- Missing/wrong articles
-- Subject-verb disagreement
-- Passive voice sentences (rewrite as active voice)
-  Examples: "was written by John" → "John wrote", "is being reviewed" → "we are reviewing"
-- Wordy phrases: "in order to" → "to", "due to the fact that" → "because", "at this point in time" → "now"
-- Unclear pronouns or references
+RULES:
+1. originalText must be EXACT character-for-character match from input
+2. One fix per issue—don't chain improvements
+3. For rephrase: only suggest when the sentence is awkward, unclear, or could be significantly improved
+4. Skip correct, clear text even if you'd write it differently
 
-Do NOT flag:
-- Correct text that's just different from your preference
-- Informal but grammatically correct text
-- Short simple sentences (they're fine)
-
-IMPORTANT: Only suggest ONE fix per issue. Don't endlessly improve the same text.
-
-For each issue:
-- originalText: EXACT text (copy character-for-character, including spaces)
-- suggestedText: the fix
-- explanation: 1 sentence explaining why
-
-JSON format:
+OUTPUT FORMAT (strict JSON):
 {
   "issues": [
     {
-      "category": "spelling|grammar|style|clarity",
-      "originalText": "<exact text>",
-      "suggestedText": "<fix>",
-      "explanation": "<brief>"
+      "category": "spelling|grammar|style|clarity|rephrase",
+      "originalText": "exact text from input",
+      "suggestedText": "corrected or rephrased text",
+      "explanation": "Brief reason"
     }
   ]
 }
 
-If no errors: {"issues": []}`;
+If text is correct, return: {"issues": []}`;
 
 interface GroqResponse {
   issues: Array<{
@@ -123,14 +107,34 @@ export class GroqClient {
           { role: 'user', content: `Analyze this text for issues. Only report issues in these categories: ${enabledCategories.join(', ')}\n\nText:\n${text}` },
         ],
         temperature: 0.1,
-        max_tokens: 2048,
+        max_tokens: 1024,
         response_format: { type: 'json_object' },
       }),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Groq API error: ${response.status} - ${error}`);
+      const errorText = await response.text();
+
+      // Parse rate limit errors for user-friendly message
+      if (response.status === 429) {
+        try {
+          const errorJson = JSON.parse(errorText);
+          const message = errorJson.error?.message || '';
+
+          // Extract wait time if present
+          const waitMatch = message.match(/try again in (\d+m\d+)/);
+          const waitTime = waitMatch ? waitMatch[1] : '5 minutes';
+
+          throw new Error(`Rate limit reached. Please wait ${waitTime} or upgrade your Groq plan.`);
+        } catch (e) {
+          if (e instanceof Error && e.message.includes('Rate limit')) {
+            throw e;
+          }
+          throw new Error('Rate limit reached. Please wait a few minutes.');
+        }
+      }
+
+      throw new Error(`API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -256,7 +260,7 @@ export class GroqClient {
   }
 
   private isValidCategory(category: string): category is IssueCategory {
-    return ['spelling', 'grammar', 'style', 'clarity', 'tone'].includes(category);
+    return ['spelling', 'grammar', 'style', 'clarity', 'tone', 'rephrase'].includes(category);
   }
 
   private filterIssues(result: AnalysisResult, settings: Settings): AnalysisResult {

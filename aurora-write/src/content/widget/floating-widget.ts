@@ -10,10 +10,15 @@ export class FloatingWidget {
   private currentFieldElement: HTMLElement | null = null;
   private state: WidgetState = 'hidden';
   private onCategoryClick: ((category: IssueCategory) => void) | null = null;
+  private onAcceptAllSpelling: (() => void) | null = null;
   private isInteracting = false;
 
   setOnCategoryClick(callback: (category: IssueCategory) => void): void {
     this.onCategoryClick = callback;
+  }
+
+  setOnAcceptAllSpelling(callback: () => void): void {
+    this.onAcceptAllSpelling = callback;
   }
 
   isUserInteracting(): boolean {
@@ -260,6 +265,26 @@ export class FloatingWidget {
         font-size: 12px;
         line-height: 1.3;
       }
+      .aurora-accept-all {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 12px;
+        margin: 8px;
+        margin-top: 0;
+        background: #e53935;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .aurora-accept-all:hover {
+        background: #c62828;
+      }
     `;
   }
 
@@ -304,6 +329,11 @@ export class FloatingWidget {
       `)
       .join('');
 
+    // Add "Accept All Spelling" button if there are spelling issues
+    const acceptAllButton = counts.spelling > 0
+      ? `<button class="aurora-accept-all" data-action="accept-all-spelling">✓ Fix All Spelling (${counts.spelling})</button>`
+      : '';
+
     return `
       <div class="aurora-widget-header">
         <div class="aurora-logo">A</div>
@@ -313,6 +343,7 @@ export class FloatingWidget {
       </div>
       <div class="aurora-categories">
         ${categoryRows}
+        ${acceptAllButton}
       </div>
     `;
   }
@@ -336,6 +367,17 @@ export class FloatingWidget {
         }
       });
     });
+
+    // Handle Accept All Spelling button
+    const acceptAllBtn = content.querySelector('.aurora-accept-all');
+    if (acceptAllBtn) {
+      acceptAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onAcceptAllSpelling) {
+          this.onAcceptAllSpelling();
+        }
+      });
+    }
   }
 
   private calculateCounts(issues: TextIssue[]): IssueCounts {
@@ -345,6 +387,7 @@ export class FloatingWidget {
       style: 0,
       clarity: 0,
       tone: 0,
+      rephrase: 0,
       total: 0,
     };
 
