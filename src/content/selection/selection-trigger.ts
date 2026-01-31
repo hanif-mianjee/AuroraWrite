@@ -10,11 +10,9 @@ export class SelectionTrigger {
   }
 
   show(rects: DOMRect[]): void {
-    console.log('[AuroraWrite] SelectionTrigger.show called, rects:', rects.length);
     this.hide();
 
     if (rects.length === 0) {
-      console.log('[AuroraWrite] No rects, not showing trigger');
       return;
     }
 
@@ -22,6 +20,8 @@ export class SelectionTrigger {
     const lastRect = rects[rects.length - 1];
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
     this.container = document.createElement('div');
     this.container.className = 'aurora-selection-trigger';
@@ -48,16 +48,42 @@ export class SelectionTrigger {
 
     this.shadowRoot.appendChild(button);
 
-    // Position the trigger at the end of selection
+    // Calculate position with viewport bounds checking
+    const triggerWidth = 100;
+    const triggerHeight = 30;
+    const padding = 8;
+
+    let left = lastRect.right + scrollX + 4;
+    let top = lastRect.bottom + scrollY + 4;
+
+    // Check right edge
+    if (left + triggerWidth > viewportWidth + scrollX - padding) {
+      left = lastRect.left + scrollX - triggerWidth - 4;
+    }
+
+    // Check left edge
+    if (left < scrollX + padding) {
+      left = scrollX + padding;
+    }
+
+    // Check bottom edge
+    if (top + triggerHeight > viewportHeight + scrollY - padding) {
+      top = lastRect.top + scrollY - triggerHeight - 4;
+    }
+
+    // Check top edge
+    if (top < scrollY + padding) {
+      top = scrollY + padding;
+    }
+
     this.container.style.cssText = `
       position: absolute;
-      top: ${lastRect.bottom + scrollY + 4}px;
-      left: ${lastRect.right + scrollX}px;
+      top: ${top}px;
+      left: ${left}px;
       z-index: 2147483646;
     `;
 
     document.body.appendChild(this.container);
-    console.log('[AuroraWrite] SelectionTrigger appended to body at', lastRect.right + scrollX, lastRect.bottom + scrollY + 4);
   }
 
   private getStyles(): string {

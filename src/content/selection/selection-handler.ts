@@ -14,13 +14,12 @@ export type SelectionClearCallback = () => void;
 export class SelectionHandler {
   private onSelect: SelectionCallback | null = null;
   private onClear: SelectionClearCallback | null = null;
-  private debouncedHandleSelection: () => void;
   private lastSelectionText = '';
   private isOurComponent = false;
   private activeInputElement: HTMLTextAreaElement | HTMLInputElement | null = null;
+  private checkSelectionTimeout: number | null = null;
 
   constructor() {
-    this.debouncedHandleSelection = debounce(() => this.handleSelection(), 200);
     this.setupListeners();
   }
 
@@ -33,12 +32,14 @@ export class SelectionHandler {
   }
 
   private setupListeners(): void {
-    console.log('[AuroraWrite] SelectionHandler.setupListeners - adding event listeners');
-    document.addEventListener('selectionchange', this.debouncedHandleSelection);
-    document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    // Use mouseup as primary trigger for selections
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    document.addEventListener('keyup', this.handleKeyUp.bind(this));
     document.addEventListener('focusin', this.handleFocusIn.bind(this));
     document.addEventListener('focusout', this.handleFocusOut.bind(this));
+    // Also listen for selectionchange for keyboard-based selections
+    document.addEventListener('selectionchange', this.handleSelectionChange.bind(this));
   }
 
   private handleFocusIn(e: FocusEvent): void {
@@ -55,18 +56,67 @@ export class SelectionHandler {
       if (!(active instanceof HTMLTextAreaElement) && !(active instanceof HTMLInputElement)) {
         this.activeInputElement = null;
       }
-    }, 100);
+    }, 150);
   }
 
-  private handleMouseUp(e: MouseEvent): void {
-    // Check for input/textarea selection after mouse up
-    if (this.activeInputElement) {
-      setTimeout(() => this.checkInputSelection(), 10);
+  private handleMouseDown(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    // Check if clicking inside our components
+    this.isOurComponent = target.closest('.aurora-widget-container, .aurora-selection-trigger, .aurora-transform-popover') !== null;
+
+    // Clear selection state when clicking elsewhere
+    if (!this.isOurComponent) {
+      // Don't clear immediately - wait to see if a new selection is made
     }
   }
 
-  private checkInputSelection(): void {
-    if (!this.activeInputElement) return;
+  private handleMouseUp(e: MouseEvent): void {
+    // Clear any pending check
+    if (this.checkSelectionTimeout) {
+      clearTimeout(this.checkSelectionTimeout);
+    }
+
+    // Small delay to let the selection settle
+    this.checkSelectionTimeout = window.setTimeout(() => {
+      this.checkAllSelections();
+    }, 50);
+  }
+
+  private handleKeyUp(e: KeyboardEvent): void {
+    // Check for selection on Shift+Arrow keys (common selection method)
+    if (e.shiftKey && (e.key.includes('Arrow') || e.key === 'Home' || e.key === 'End')) {
+      if (this.checkSelectionTimeout) {
+        clearTimeout(this.checkSelectionTimeout);
+      }
+      this.checkSelectionTimeout = window.setTimeout(() => {
+        this.checkAllSelections();
+      }, 50);
+    }
+  }
+
+  private handleSelectionChange(): void {
+    // Debounce selection changes
+    if (this.checkSelectionTimeout) {
+      clearTimeout(this.checkSelectionTimeout);
+    }
+    this.checkSelectionTimeout = window.setTimeout(() => {
+      this.checkAllSelections();
+    }, 150);
+  }
+
+  private checkAllSelections(): void {
+    // First check input/textarea selection
+    if (this.activeInputElement) {
+      const inputResult = this.checkInputSelection();
+      if (inputResult) return; // Found input selection, don't check window selection
+    }
+
+    // Then check window selection (for contenteditable and regular text)
+    this.checkWindowSelection();
+  }
+
+  private checkInputSelection(): boolean {
+    if (!this.activeInputElement) return false;
 
     const element = this.activeInputElement;
     const start = element.selectionStart ?? 0;
@@ -77,102 +127,97 @@ export class SelectionHandler {
         this.lastSelectionText = '';
         this.onClear?.();
       }
-      return;
+      return false;
     }
 
     const text = element.value.substring(start, end).trim();
-    console.log('[AuroraWrite] Input selection detected:', text.substring(0, 30));
 
     if (text.length < 3) {
       if (this.lastSelectionText) {
         this.lastSelectionText = '';
         this.onClear?.();
       }
-      return;
+      return false;
     }
 
     if (text === this.lastSelectionText) {
-      return;
+      return true; // Same selection, don't trigger again
     }
 
     this.lastSelectionText = text;
 
     // Get position for the selection in the input
     const rects = this.getInputSelectionRects(element, start, end);
-    console.log('[AuroraWrite] Input selection rects:', rects.length);
 
     const context: SelectionContext = {
       text,
-      range: document.createRange(), // Placeholder range
+      range: document.createRange(),
       isEditable: true,
       editableElement: element,
       rects,
     };
 
-    console.log('[AuroraWrite] Calling onSelect for input selection');
     this.onSelect?.(context);
+    return true;
   }
 
   private getInputSelectionRects(element: HTMLTextAreaElement | HTMLInputElement, start: number, end: number): DOMRect[] {
-    // Create a temporary mirror element to measure text position
     const rect = element.getBoundingClientRect();
     const computedStyle = window.getComputedStyle(element);
 
-    // For simplicity, position the trigger at the end of the input/textarea
-    // Creating a rect at the selection end position
-    const mirror = document.createElement('div');
-    mirror.style.cssText = `
-      position: absolute;
-      top: -9999px;
-      left: -9999px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      visibility: hidden;
-      font: ${computedStyle.font};
-      padding: ${computedStyle.padding};
-      border: ${computedStyle.border};
-      width: ${element.offsetWidth}px;
-    `;
+    // For textarea, try to calculate more accurate position
+    if (element instanceof HTMLTextAreaElement) {
+      // Create a mirror div to measure text
+      const mirror = document.createElement('div');
+      mirror.style.cssText = `
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        visibility: hidden;
+        font: ${computedStyle.font};
+        padding: ${computedStyle.padding};
+        border: ${computedStyle.border};
+        width: ${element.clientWidth}px;
+        line-height: ${computedStyle.lineHeight};
+      `;
 
-    const textBefore = element.value.substring(0, end);
-    mirror.textContent = textBefore;
-    document.body.appendChild(mirror);
+      // Add text up to selection end
+      const textBeforeSelection = element.value.substring(0, end);
+      mirror.textContent = textBeforeSelection;
+      document.body.appendChild(mirror);
 
-    const span = document.createElement('span');
-    span.textContent = element.value.substring(start, end) || '.';
-    mirror.textContent = element.value.substring(0, start);
-    mirror.appendChild(span);
+      const mirrorHeight = mirror.scrollHeight;
+      const lineHeight = parseInt(computedStyle.lineHeight) || 20;
+      const lines = Math.ceil(mirrorHeight / lineHeight);
 
-    const spanRect = span.getBoundingClientRect();
-    document.body.removeChild(mirror);
+      document.body.removeChild(mirror);
 
-    // Calculate the actual position relative to the input
-    const scrollLeft = element.scrollLeft || 0;
-    const scrollTop = element.scrollTop || 0;
+      // Position at bottom-right of textarea or at estimated line position
+      const estimatedTop = rect.top + Math.min((lines - 1) * lineHeight, element.clientHeight - lineHeight);
 
-    // Create a simplified rect at the end of the selection
-    const selectionRect = new DOMRect(
-      rect.left + Math.min(spanRect.width, element.offsetWidth - 20),
-      rect.top + (element instanceof HTMLTextAreaElement ? Math.min(spanRect.height, element.offsetHeight - 10) : 0),
+      return [new DOMRect(
+        rect.right - 20,
+        estimatedTop,
+        10,
+        lineHeight
+      )];
+    }
+
+    // For input, position at the right edge
+    return [new DOMRect(
+      rect.right - 10,
+      rect.top,
       10,
-      parseInt(computedStyle.lineHeight) || 20
-    );
-
-    return [selectionRect];
+      rect.height
+    )];
   }
 
-  private handleMouseDown(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    // Check if clicking inside our components (shadow DOM containers)
-    this.isOurComponent = target.closest('.aurora-widget-container, .aurora-selection-trigger, .aurora-transform-popover') !== null;
-  }
-
-  private handleSelection(): void {
-    console.log('[AuroraWrite] SelectionHandler.handleSelection called');
+  private checkWindowSelection(): void {
     const selection = window.getSelection();
 
     if (!selection || selection.isCollapsed) {
-      console.log('[AuroraWrite] No selection or collapsed');
       if (this.lastSelectionText && !this.isOurComponent) {
         this.lastSelectionText = '';
         this.onClear?.();
@@ -181,9 +226,7 @@ export class SelectionHandler {
     }
 
     const text = selection.toString().trim();
-    console.log('[AuroraWrite] Selection text:', text.substring(0, 50));
 
-    // Filter: minimum 3 characters
     if (text.length < 3) {
       if (this.lastSelectionText) {
         this.lastSelectionText = '';
@@ -192,7 +235,6 @@ export class SelectionHandler {
       return;
     }
 
-    // Avoid re-triggering for the same selection
     if (text === this.lastSelectionText) {
       return;
     }
@@ -213,11 +255,13 @@ export class SelectionHandler {
 
     const range = selection.getRangeAt(0);
     const rects = Array.from(range.getClientRects());
-    console.log('[AuroraWrite] Selection rects:', rects.length);
+
+    if (rects.length === 0) {
+      return;
+    }
 
     // Determine if selection is in an editable element
     const { isEditable, editableElement } = this.getEditableContext(selection);
-    console.log('[AuroraWrite] Selection isEditable:', isEditable);
 
     const context: SelectionContext = {
       text,
@@ -227,7 +271,6 @@ export class SelectionHandler {
       rects,
     };
 
-    console.log('[AuroraWrite] Calling onSelect callback');
     this.onSelect?.(context);
   }
 
@@ -266,7 +309,8 @@ export class SelectionHandler {
   }
 
   destroy(): void {
-    document.removeEventListener('selectionchange', this.debouncedHandleSelection);
-    // Note: Other bound listeners can't be easily removed, but they're on document so it's fine
+    if (this.checkSelectionTimeout) {
+      clearTimeout(this.checkSelectionTimeout);
+    }
   }
 }

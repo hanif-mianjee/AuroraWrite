@@ -6,12 +6,11 @@ export interface TransformCallbacks {
   onCancel: () => void;
 }
 
-type TabType = Exclude<TransformationType, 'custom'>;
+type TabType = Exclude<TransformationType, 'custom' | 'translate'>;
 
 const TABS: { type: TabType; label: string }[] = [
   { type: 'improve', label: 'Improve' },
   { type: 'rephrase', label: 'Rephrase' },
-  { type: 'translate', label: 'Translate' },
   { type: 'shorten', label: 'Shorten' },
   { type: 'friendly', label: 'Friendly' },
   { type: 'formal', label: 'Formal' },
@@ -25,6 +24,7 @@ export class TransformPopover {
   private originalText = '';
   private transformedText = '';
   private isLoading = false;
+  private lastCustomPrompt = '';
 
   setCallbacks(callbacks: TransformCallbacks): void {
     this.callbacks = callbacks;
@@ -36,12 +36,11 @@ export class TransformPopover {
     this.transformedText = '';
     this.currentTab = 'improve';
     this.isLoading = false;
+    this.lastCustomPrompt = '';
 
     if (rects.length === 0) return;
 
     const lastRect = rects[rects.length - 1];
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
 
     this.container = document.createElement('div');
     this.container.className = 'aurora-transform-popover';
@@ -57,9 +56,10 @@ export class TransformPopover {
     this.shadowRoot.appendChild(content);
 
     this.setupEvents(content);
-    this.positionPopover(lastRect, scrollX, scrollY);
-
     document.body.appendChild(this.container);
+
+    // Position after adding to DOM so we can measure
+    this.positionPopover(lastRect);
 
     // Trigger initial transformation
     this.requestTransform(this.currentTab);
@@ -74,31 +74,46 @@ export class TransformPopover {
     }
   };
 
-  private positionPopover(rect: DOMRect, scrollX: number, scrollY: number): void {
-    if (!this.container) return;
+  private positionPopover(rect: DOMRect): void {
+    if (!this.container || !this.shadowRoot) return;
 
-    const popoverWidth = 360;
-    const popoverHeight = 300;
+    const popover = this.shadowRoot.querySelector('.popover') as HTMLElement;
+    if (!popover) return;
+
+    const popoverWidth = 380;
+    const popoverHeight = popover.offsetHeight || 350;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const padding = 16;
 
     let left = rect.left + scrollX;
     let top = rect.bottom + scrollY + 8;
 
     // Adjust if would go off right edge
-    if (left + popoverWidth > viewportWidth + scrollX - 20) {
-      left = viewportWidth + scrollX - popoverWidth - 20;
+    if (left + popoverWidth > viewportWidth + scrollX - padding) {
+      left = viewportWidth + scrollX - popoverWidth - padding;
     }
 
-    // Adjust if would go off bottom edge
-    if (rect.bottom + popoverHeight > viewportHeight) {
+    // Adjust if would go off left edge
+    if (left < scrollX + padding) {
+      left = scrollX + padding;
+    }
+
+    // Adjust if would go off bottom edge - show above selection instead
+    if (rect.bottom + popoverHeight + padding > viewportHeight) {
       top = rect.top + scrollY - popoverHeight - 8;
+      // If still off top, just position at top of viewport
+      if (top < scrollY + padding) {
+        top = scrollY + padding;
+      }
     }
 
     this.container.style.cssText = `
       position: absolute;
       top: ${top}px;
-      left: ${Math.max(scrollX + 10, left)}px;
+      left: ${left}px;
       z-index: 2147483647;
     `;
   }
@@ -111,7 +126,8 @@ export class TransformPopover {
         padding: 0;
       }
       .popover {
-        width: 360px;
+        width: 380px;
+        max-width: calc(100vw - 32px);
         background: #ffffff;
         border-radius: 12px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
@@ -159,17 +175,52 @@ export class TransformPopover {
       }
       .preview-area {
         padding: 12px 16px;
-        min-height: 80px;
-        max-height: 150px;
+        min-height: 100px;
+        max-height: 200px;
         overflow-y: auto;
         border-bottom: 1px solid #f3f4f6;
       }
-      .preview-text {
+      .diff-container {
         font-size: 13px;
-        line-height: 1.5;
-        color: #374151;
+        line-height: 1.6;
+      }
+      .diff-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+        color: #6b7280;
+      }
+      .diff-original {
+        background: #fef2f2;
+        border-left: 3px solid #ef4444;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        border-radius: 0 6px 6px 0;
+        color: #991b1b;
+      }
+      .diff-transformed {
+        background: #f0fdf4;
+        border-left: 3px solid #22c55e;
+        padding: 8px 12px;
+        border-radius: 0 6px 6px 0;
+        color: #166534;
+      }
+      .diff-text {
         white-space: pre-wrap;
         word-break: break-word;
+      }
+      .word-removed {
+        background: #fecaca;
+        text-decoration: line-through;
+        padding: 1px 2px;
+        border-radius: 2px;
+      }
+      .word-added {
+        background: #bbf7d0;
+        padding: 1px 2px;
+        border-radius: 2px;
       }
       .preview-placeholder {
         color: #9ca3af;
@@ -201,9 +252,11 @@ export class TransformPopover {
       .custom-prompt {
         padding: 12px 16px;
         border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        gap: 8px;
       }
       .custom-input {
-        width: 100%;
+        flex: 1;
         padding: 8px 12px;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
@@ -217,6 +270,25 @@ export class TransformPopover {
       }
       .custom-input::placeholder {
         color: #9ca3af;
+      }
+      .btn-send {
+        padding: 8px 12px;
+        background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s;
+        white-space: nowrap;
+      }
+      .btn-send:hover {
+        opacity: 0.9;
+      }
+      .btn-send:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
       .actions {
         display: flex;
@@ -278,6 +350,7 @@ export class TransformPopover {
       </div>
       <div class="custom-prompt">
         <input type="text" class="custom-input" placeholder="Ask for a change..." />
+        <button class="btn-send">Send</button>
       </div>
       <div class="actions">
         <button class="btn btn-cancel">Cancel</button>
@@ -299,17 +372,33 @@ export class TransformPopover {
       });
     });
 
-    // Custom prompt input
+    // Custom prompt input and button
     const customInput = content.querySelector('.custom-input') as HTMLInputElement;
+    const sendBtn = content.querySelector('.btn-send') as HTMLButtonElement;
+
+    const handleCustomPrompt = () => {
+      const prompt = customInput.value.trim();
+      if (prompt) {
+        this.lastCustomPrompt = prompt;
+        // Clear all active tabs since this is a custom request
+        content.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.requestTransform('custom', prompt);
+        // Don't clear the input - keep it visible so user knows what they asked for
+      }
+    };
+
     if (customInput) {
       customInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-          const prompt = customInput.value.trim();
-          if (prompt) {
-            this.requestTransform('custom', prompt);
-            customInput.value = '';
-          }
+          e.preventDefault();
+          handleCustomPrompt();
         }
+      });
+    }
+
+    if (sendBtn) {
+      sendBtn.addEventListener('click', () => {
+        handleCustomPrompt();
       });
     }
 
@@ -383,7 +472,8 @@ export class TransformPopover {
         </div>
       `;
     } else if (this.transformedText) {
-      previewContent.innerHTML = `<div class="preview-text">${this.escapeHtml(this.transformedText)}</div>`;
+      // Show word-by-word diff
+      previewContent.innerHTML = this.renderDiff();
     } else {
       previewContent.innerHTML = `<div class="preview-placeholder">Select a transformation type</div>`;
     }
@@ -392,6 +482,62 @@ export class TransformPopover {
     if (acceptBtn) {
       acceptBtn.disabled = !this.transformedText || this.isLoading;
     }
+  }
+
+  private renderDiff(): string {
+    const originalWords = this.originalText.split(/(\s+)/);
+    const transformedWords = this.transformedText.split(/(\s+)/);
+
+    // Simple word-by-word diff
+    const { originalHtml, transformedHtml } = this.computeWordDiff(originalWords, transformedWords);
+
+    return `
+      <div class="diff-container">
+        <div class="diff-original">
+          <div class="diff-label">Original</div>
+          <div class="diff-text">${originalHtml}</div>
+        </div>
+        <div class="diff-transformed">
+          <div class="diff-label">Suggested</div>
+          <div class="diff-text">${transformedHtml}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  private computeWordDiff(original: string[], transformed: string[]): { originalHtml: string; transformedHtml: string } {
+    // Create a simple LCS-based diff
+    const originalSet = new Set(original.map(w => w.toLowerCase().trim()).filter(w => w));
+    const transformedSet = new Set(transformed.map(w => w.toLowerCase().trim()).filter(w => w));
+
+    let originalHtml = '';
+    let transformedHtml = '';
+
+    // Mark words in original that don't appear in transformed
+    for (const word of original) {
+      const trimmed = word.toLowerCase().trim();
+      if (!trimmed) {
+        originalHtml += this.escapeHtml(word);
+      } else if (!transformedSet.has(trimmed)) {
+        originalHtml += `<span class="word-removed">${this.escapeHtml(word)}</span>`;
+      } else {
+        originalHtml += this.escapeHtml(word);
+      }
+    }
+
+    // Mark words in transformed that don't appear in original
+    for (const word of transformed) {
+      const trimmed = word.toLowerCase().trim();
+      if (!trimmed) {
+        transformedHtml += this.escapeHtml(word);
+      } else if (!originalSet.has(trimmed)) {
+        transformedHtml += `<span class="word-added">${this.escapeHtml(word)}</span>`;
+      } else {
+        transformedHtml += this.escapeHtml(word);
+      }
+    }
+
+    return { originalHtml, transformedHtml };
   }
 
   private escapeHtml(text: string): string {
