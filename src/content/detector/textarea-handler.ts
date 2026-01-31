@@ -129,6 +129,11 @@ export class TextareaHandler {
     this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
+  setText(text: string): void {
+    this.textarea.value = text;
+    this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
   destroy(): void {
     if (this.mirror) {
       this.mirror.remove();

@@ -163,6 +163,20 @@ export class OverlayManager {
     overlay.handler.replaceText(issue.startOffset, issue.endOffset, issue.suggestedText);
   }
 
+  getFieldText(fieldId: string): string | null {
+    const overlay = this.overlays.get(fieldId);
+    if (!overlay) return null;
+
+    return overlay.handler.getText();
+  }
+
+  setFieldText(fieldId: string, text: string): void {
+    const overlay = this.overlays.get(fieldId);
+    if (!overlay) return;
+
+    overlay.handler.setText(text);
+  }
+
   ignoreIssue(fieldId: string, issueId: string): void {
     console.log('[AuroraWrite] OverlayManager.ignoreIssue:', fieldId, issueId);
     const overlay = this.overlays.get(fieldId);

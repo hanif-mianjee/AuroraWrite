@@ -24,6 +24,7 @@ class AuroraWrite {
   private handlers: Map<string, TextareaHandler | ContentEditableHandler> = new Map();
   private currentSelectionContext: SelectionContext | null = null;
   private pendingTransformRequestId: string | null = null;
+  private sessionIgnoredIssues: Map<string, Set<string>> = new Map();
 
   constructor() {
     this.detector = new TextFieldDetector();
@@ -167,6 +168,15 @@ class AuroraWrite {
     const { fieldId, result } = message.payload;
 
     this.pendingAnalysis.delete(fieldId);
+
+    // Filter out session-ignored issues before updating
+    const sessionIgnored = this.sessionIgnoredIssues.get(fieldId);
+    if (sessionIgnored && sessionIgnored.size > 0) {
+      result.issues = result.issues.filter(
+        issue => !sessionIgnored.has(issue.originalText.toLowerCase())
+      );
+    }
+
     this.overlayManager.updateAnalysis(fieldId, result);
 
     if (this.activeFieldId === fieldId) {
@@ -220,13 +230,30 @@ class AuroraWrite {
       .filter(i => i.category === 'spelling' && !i.ignored)
       .sort((a, b) => b.startOffset - a.startOffset); // Sort by offset descending to apply from end
 
+    console.log('[AuroraWrite] acceptAllSpelling - spelling issues:', spellingIssues.length);
+
     if (spellingIssues.length === 0) return;
 
+    // Get the current text from the overlay manager
+    let text = this.overlayManager.getFieldText(fieldId);
+    if (!text) return;
 
-    // Apply fixes from end to start to preserve offsets
+    console.log('[AuroraWrite] Original text:', text);
+
+    // Apply ALL replacements to the text string (from end to start to preserve offsets)
+    for (const issue of spellingIssues) {
+      console.log('[AuroraWrite] Fixing:', issue.originalText, '->', issue.suggestedText, 'at', issue.startOffset, '-', issue.endOffset);
+      text = text.substring(0, issue.startOffset) + issue.suggestedText + text.substring(issue.endOffset);
+    }
+
+    console.log('[AuroraWrite] New text:', text);
+
+    // Set the final text in one operation
+    this.overlayManager.setFieldText(fieldId, text);
+
+    // Remove ALL spelling issues from the overlay
     for (const issue of spellingIssues) {
       this.overlayManager.removeIssue(fieldId, issue.id);
-      this.overlayManager.replaceText(fieldId, issue);
     }
 
     // Update widget with remaining issues
@@ -249,7 +276,7 @@ class AuroraWrite {
         return;
       }
       this.currentSelectionContext = context;
-      this.selectionTrigger.show(context.rects);
+      this.selectionTrigger.show(context.rects, context.editableElement);
     });
 
     this.selectionHandler.setOnClear(() => {
@@ -263,7 +290,11 @@ class AuroraWrite {
     this.selectionTrigger.setOnClick(() => {
       if (this.currentSelectionContext) {
         this.selectionTrigger.hide();
-        this.transformPopover.show(this.currentSelectionContext.text, this.currentSelectionContext.rects);
+        this.transformPopover.show(
+          this.currentSelectionContext.text,
+          this.currentSelectionContext.rects,
+          this.currentSelectionContext.editableElement
+        );
       }
     });
 
@@ -409,6 +440,12 @@ class AuroraWrite {
 
     // Hide popover first
     this.popover.hide();
+
+    // Add to session-ignored issues for this field
+    if (!this.sessionIgnoredIssues.has(fieldId)) {
+      this.sessionIgnoredIssues.set(fieldId, new Set());
+    }
+    this.sessionIgnoredIssues.get(fieldId)!.add(issue.originalText.toLowerCase());
 
     // Remove the issue from overlay (removes underline immediately)
     this.overlayManager.removeIssue(fieldId, issue.id);

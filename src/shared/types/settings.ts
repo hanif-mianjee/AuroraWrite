@@ -1,8 +1,19 @@
 import type { IssueCategory } from './analysis';
+import type { LLMProviderType } from './llm';
 
 export interface CategorySettings {
   enabled: boolean;
   sensitivity: 'low' | 'medium' | 'high';
+}
+
+export interface ProviderSettings {
+  activeProvider: LLMProviderType;
+  providers: {
+    [key in LLMProviderType]?: {
+      apiKey: string;
+      model: string;
+    };
+  };
 }
 
 export interface Settings {
@@ -12,6 +23,7 @@ export interface Settings {
   ignoredWords: string[];
   enabledSites: 'all' | 'whitelist';
   siteList: string[];
+  providerSettings?: ProviderSettings;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -22,10 +34,14 @@ export const DEFAULT_SETTINGS: Settings = {
     grammar: { enabled: true, sensitivity: 'high' },
     style: { enabled: true, sensitivity: 'medium' },
     clarity: { enabled: true, sensitivity: 'medium' },
-    tone: { enabled: false, sensitivity: 'low' },
+    tone: { enabled: true, sensitivity: 'low' },
     rephrase: { enabled: true, sensitivity: 'medium' },
   },
   ignoredWords: [],
   enabledSites: 'all',
   siteList: [],
+  providerSettings: {
+    activeProvider: 'groq',
+    providers: {},
+  },
 };

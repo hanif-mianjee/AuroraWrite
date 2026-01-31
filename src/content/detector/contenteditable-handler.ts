@@ -95,6 +95,11 @@ export class ContentEditableHandler {
     }
   }
 
+  setText(text: string): void {
+    this.element.textContent = text;
+    this.element.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
   destroy(): void {
     // No cleanup needed
   }

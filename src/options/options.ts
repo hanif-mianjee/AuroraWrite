@@ -1,28 +1,52 @@
-import { getSettings, saveSettings, saveApiKey, addIgnoredWord, removeIgnoredWord } from '../shared/utils/storage';
-import type { Settings, CategorySettings } from '../shared/types/settings';
+import { getSettings, saveSettings, saveApiKey, addIgnoredWord, removeIgnoredWord, saveProviderSettings } from '../shared/utils/storage';
+import type { Settings, CategorySettings, ProviderSettings } from '../shared/types/settings';
 import type { IssueCategory } from '../shared/types/analysis';
+import type { LLMProviderConfig, LLMProviderType } from '../shared/types/llm';
 
 const CATEGORIES: IssueCategory[] = ['spelling', 'grammar', 'style', 'clarity', 'tone'];
 
+const API_KEY_HELP_LINKS: Record<LLMProviderType, string> = {
+  groq: 'https://console.groq.com/keys',
+  openai: 'https://platform.openai.com/api-keys',
+  gemini: 'https://aistudio.google.com/apikey',
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  together: 'https://api.together.xyz/settings/api-keys',
+  mistral: 'https://console.mistral.ai/api-keys/',
+};
+
 class OptionsPage {
   private settings: Settings | null = null;
+  private providers: LLMProviderConfig[] = [];
+  private activeProvider: LLMProviderType = 'groq';
 
   async init(): Promise<void> {
     this.settings = await getSettings();
+    await this.loadProviders();
+    this.activeProvider = this.settings?.providerSettings?.activeProvider || 'groq';
     this.populateForm();
     this.setupEventListeners();
+  }
+
+  private async loadProviders(): Promise<void> {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'GET_PROVIDERS' });
+      if (response.type === 'PROVIDERS_RESPONSE') {
+        this.providers = response.payload;
+      }
+    } catch (error) {
+      console.error('Failed to load providers:', error);
+      // Fallback to default providers
+      this.providers = [
+        { type: 'groq', name: 'Groq', freeTier: true, models: [{ id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B' }] } as LLMProviderConfig,
+      ];
+    }
   }
 
   private populateForm(): void {
     if (!this.settings) return;
 
-    const apiKeyInput = document.getElementById('api-key') as HTMLInputElement;
-    apiKeyInput.value = this.settings.apiKey;
-
-    const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
-    if (modelSelect) {
-      modelSelect.value = this.settings.model || 'llama-3.1-8b-instant';
-    }
+    this.renderProviderGrid();
+    this.updateProviderConfig();
 
     for (const category of CATEGORIES) {
       const config = this.settings.categories[category];
@@ -34,6 +58,67 @@ class OptionsPage {
     }
 
     this.renderIgnoredWords();
+  }
+
+  private renderProviderGrid(): void {
+    const grid = document.getElementById('provider-grid');
+    if (!grid) return;
+
+    grid.innerHTML = this.providers.map(provider => `
+      <div class="provider-card${provider.type === this.activeProvider ? ' active' : ''}" data-provider="${provider.type}">
+        <div class="provider-card-header">
+          <span class="provider-name">${provider.name}</span>
+          <span class="provider-badge ${provider.freeTier ? 'free' : 'paid'}">${provider.freeTier ? 'Free Tier' : 'Paid'}</span>
+        </div>
+      </div>
+    `).join('');
+
+    // Add click handlers
+    grid.querySelectorAll('.provider-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const providerType = card.getAttribute('data-provider') as LLMProviderType;
+        this.selectProvider(providerType);
+      });
+    });
+  }
+
+  private selectProvider(providerType: LLMProviderType): void {
+    this.activeProvider = providerType;
+    this.renderProviderGrid();
+    this.updateProviderConfig();
+  }
+
+  private updateProviderConfig(): void {
+    const provider = this.providers.find(p => p.type === this.activeProvider);
+    if (!provider) return;
+
+    // Update API key input
+    const apiKeyInput = document.getElementById('provider-api-key') as HTMLInputElement;
+    const savedApiKey = this.settings?.providerSettings?.providers?.[this.activeProvider]?.apiKey ||
+      (this.activeProvider === 'groq' ? this.settings?.apiKey : '');
+    if (apiKeyInput) {
+      apiKeyInput.value = savedApiKey || '';
+    }
+
+    // Update help text
+    const helpText = document.getElementById('api-key-help');
+    if (helpText) {
+      const link = API_KEY_HELP_LINKS[this.activeProvider];
+      helpText.innerHTML = `Get your API key from <a href="${link}" target="_blank">${provider.name}</a>`;
+    }
+
+    // Update model select
+    const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
+    if (modelSelect) {
+      modelSelect.innerHTML = provider.models.map(model =>
+        `<option value="${model.id}">${model.name}</option>`
+      ).join('');
+
+      const savedModel = this.settings?.providerSettings?.providers?.[this.activeProvider]?.model ||
+        (this.activeProvider === 'groq' ? this.settings?.model : '') ||
+        provider.defaultModel;
+      modelSelect.value = savedModel;
+    }
   }
 
   private renderIgnoredWords(): void {
@@ -74,11 +159,11 @@ class OptionsPage {
 
   private setupEventListeners(): void {
     document.getElementById('toggle-visibility')?.addEventListener('click', () => {
-      const input = document.getElementById('api-key') as HTMLInputElement;
+      const input = document.getElementById('provider-api-key') as HTMLInputElement;
       input.type = input.type === 'password' ? 'text' : 'password';
     });
 
-    document.getElementById('save-api-key')?.addEventListener('click', () => this.saveApiKey());
+    document.getElementById('save-api-key')?.addEventListener('click', () => this.saveProviderApiKey());
 
     document.getElementById('add-word')?.addEventListener('click', () => this.addWord());
 
@@ -91,10 +176,12 @@ class OptionsPage {
     document.getElementById('save-settings')?.addEventListener('click', () => this.saveAllSettings());
   }
 
-  private async saveApiKey(): Promise<void> {
-    const input = document.getElementById('api-key') as HTMLInputElement;
+  private async saveProviderApiKey(): Promise<void> {
+    const input = document.getElementById('provider-api-key') as HTMLInputElement;
+    const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
     const statusEl = document.getElementById('api-status');
     const apiKey = input.value.trim();
+    const model = modelSelect?.value || '';
 
     if (!apiKey) {
       this.showStatus(statusEl, 'Please enter an API key', 'error');
@@ -106,14 +193,34 @@ class OptionsPage {
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'VALIDATE_API_KEY',
-        payload: { apiKey },
+        payload: { apiKey, providerType: this.activeProvider },
       });
 
       if (response.type === 'API_KEY_VALID') {
-        await saveApiKey(apiKey);
-        if (this.settings) {
-          this.settings.apiKey = apiKey;
+        // Save provider settings
+        const providerSettings: ProviderSettings = {
+          activeProvider: this.activeProvider,
+          providers: {
+            ...this.settings?.providerSettings?.providers,
+            [this.activeProvider]: { apiKey, model },
+          },
+        };
+
+        await saveProviderSettings(providerSettings);
+
+        // Also save as legacy apiKey for backwards compatibility
+        if (this.activeProvider === 'groq') {
+          await saveApiKey(apiKey);
         }
+
+        if (this.settings) {
+          this.settings.providerSettings = providerSettings;
+          if (this.activeProvider === 'groq') {
+            this.settings.apiKey = apiKey;
+            this.settings.model = model;
+          }
+        }
+
         this.showStatus(statusEl, 'API key saved and validated!', 'success');
       } else {
         this.showStatus(statusEl, 'Invalid API key', 'error');
@@ -171,7 +278,19 @@ class OptionsPage {
     const modelSelect = document.getElementById('model-select') as HTMLSelectElement;
     const model = modelSelect?.value || 'llama-3.1-8b-instant';
 
-    await saveSettings({ categories, model });
+    // Save provider settings along with other settings
+    const providerSettings: ProviderSettings = {
+      activeProvider: this.activeProvider,
+      providers: {
+        ...this.settings?.providerSettings?.providers,
+        [this.activeProvider]: {
+          ...this.settings?.providerSettings?.providers?.[this.activeProvider],
+          model,
+        },
+      },
+    };
+
+    await saveSettings({ categories, model, providerSettings });
     this.settings = await getSettings();
 
     const statusEl = document.getElementById('save-status');
