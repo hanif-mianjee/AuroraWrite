@@ -101,6 +101,7 @@ function main() {
   // Update manifest.json
   const manifest = readJSON(manifestPath);
   manifest.version = newVersion;
+  manifest.version_name = newVersion;
   writeJSON(manifestPath, manifest);
   console.log(`Updated manifest.json`);
 

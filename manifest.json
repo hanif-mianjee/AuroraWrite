@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "AuroraWrite",
-  "description": "AI-powered writing assistant with real-time grammar, spelling, and style suggestions",
+  "name": "AuroraWrite - Your Personal AI Writing Assistant",
+  "short_name": "AuroraWrite",
+  "description": "Your personal AI writing assistant with premium features. Real-time grammar, spelling, style suggestions. 6+ LLM providers.",
   "version": "0.0.0",
+  "version_name": "0.0.0",
+  "minimum_chrome_version": "116",
   "icons": {
     "16": "src/assets/icons/icon16.png",
     "48": "src/assets/icons/icon48.png",
@@ -41,6 +44,7 @@
       "48": "src/assets/icons/icon48.png",
       "128": "src/assets/icons/icon128.png"
     },
-    "default_title": "AuroraWrite"
-  }
+    "default_title": "AuroraWrite - AI Writing Assistant"
+  },
+  "homepage_url": "https://hanif-mianjee.github.io/AuroraWrite/"
 }
