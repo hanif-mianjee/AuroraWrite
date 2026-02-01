@@ -6,6 +6,15 @@ import type { TextIssue } from '../shared/types/analysis';
 
 console.log('[AuroraWrite] Background service worker starting');
 
+// Open welcome page on install/update
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install' || details.reason === 'update') {
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('src/welcome/index.html')
+    });
+  }
+});
+
 function getActiveProvider(settings: { providerSettings?: { activeProvider: LLMProviderType } }) {
   const providerType = settings.providerSettings?.activeProvider || 'groq';
   return LLMFactory.getProvider(providerType);

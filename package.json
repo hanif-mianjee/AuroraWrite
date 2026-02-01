@@ -1,12 +1,27 @@
 {
   "name": "aurora-write",
   "version": "1.0.0",
-  "description": "AI-powered writing assistant Chrome extension using Groq LLM",
+  "description": "AI-powered writing assistant Chrome extension with real-time grammar, spelling, and style suggestions",
   "type": "module",
+  "author": "Hanif Mianjee",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hanif-mianjee/AuroraWrite.git"
+  },
+  "homepage": "https://hanif-mianjee.github.io/AuroraWrite/",
+  "bugs": {
+    "url": "https://github.com/hanif-mianjee/AuroraWrite/issues"
+  },
   "scripts": {
     "dev": "vite build --watch",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "version:sync": "node scripts/version-sync.js",
+    "version:patch": "node scripts/release.js patch",
+    "version:minor": "node scripts/release.js minor",
+    "version:major": "node scripts/release.js major",
+    "release": "node scripts/release.js"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.25",

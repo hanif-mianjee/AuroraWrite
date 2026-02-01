@@ -27,3 +27,19 @@ This is an LLM response quality issue, not a code bug. The prompt tells the AI t
 **Potential improvement:** The prompt could be enhanced to better detect repeated/duplicate word issues and provide the correct minimal fix. Would you like me to adjust the system prompt to better handle these cases?
 
 ---
+
+Please explore entire project, understand what it is about, what features, it has, what problems it solves, how does this works, how it helps to increase productivity, how it is          
+  different from the other writing assistant apps,  and create following:                                                                                                                    
+  - A professional and elegent looking Welcome page, that opens after extentions installed and upadated                                                                                      
+  - Professional Home page with all the details and features, policies, credits, links, repo, how-to section, hero section with UI elements from the extentions, animations                  
+  - Implement npm versioning and also dynamically show the version in optiins page, welcome page, home page, readme                                                                          
+  - create readme with minimum information about the project, features, functionalities, architecture, extending functionality, setup guide, packaging guide, publishing guide, build, etc.  
+  - Use plugin to plugin ui-ux-pro-max@ui-ux-pro-max-skill                                                                                                                                   
+  - create design guide                                                                                                                                                                      
+  - Repo URL: https://github.com/hanif-mianjee/AuroraWrite                                                                                                                                   
+                                                                                                                                                                                             
+  Please thinkhard, use your creative libertities, design professionaly, clean, modern, intutive, functional, design that everyone loves. 
+
+---
+
+Add skip domain functionality. Search how thi be done smartly. then also update options page, welcome page, and other documents about this new feature.
