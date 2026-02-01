@@ -3,184 +3,298 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AuroraWrite Settings</title>
+  <title>Settings - AuroraWrite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1>AuroraWrite</h1>
-      <p class="subtitle">AI-Powered Writing Assistant</p>
-    </header>
+  <div class="app">
+    <!-- Background -->
+    <div class="bg-gradient"></div>
 
-    <main class="main">
-      <!-- Provider Selection Section -->
-      <section class="section">
-        <h2>AI Provider</h2>
-        <p class="section-description">Choose your preferred AI provider. Providers marked "Free" have free tiers available.</p>
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="nav-container">
+        <a href="https://hanif-mianjee.github.io/AuroraWrite/" target="_blank" class="nav-brand">
+          <svg viewBox="0 0 128 128" class="nav-logo">
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1976d2"/>
+                <stop offset="100%" style="stop-color:#7c4dff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="64" cy="64" r="60" fill="url(#logoGrad)"/>
+            <text x="64" y="82" font-family="Plus Jakarta Sans, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">A</text>
+            <path d="M30 100 Q64 85 98 100" stroke="#4caf50" stroke-width="6" fill="none" stroke-linecap="round"/>
+          </svg>
+          <span class="nav-title">AuroraWrite</span>
+        </a>
 
-        <div id="provider-grid" class="provider-grid">
-          <!-- Dynamically populated -->
+        <div class="nav-actions">
+          <span class="nav-version" id="nav-version">v1.0.0</span>
+          <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+          </a>
         </div>
+      </div>
+    </nav>
 
-        <div id="provider-config" class="provider-config">
-          <div class="provider-config-title">Provider Settings</div>
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <header class="page-header">
+          <h1>Settings</h1>
+          <p class="page-description">Configure your AI provider and customize how AuroraWrite helps you write better.</p>
+        </header>
+
+        <!-- Provider Selection Section -->
+        <section class="card">
+          <div class="card-header">
+            <div class="card-icon provider-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4"/>
+                <path d="m6.8 15-3.5 2"/>
+                <path d="m20.7 17-3.5-2"/>
+                <path d="m6.8 9-3.5-2"/>
+                <path d="m20.7 7-3.5 2"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </div>
+            <div>
+              <h2>AI Provider</h2>
+              <p>Choose your preferred AI provider. Providers marked "Free" have free tiers available.</p>
+            </div>
+          </div>
+
+          <div id="provider-grid" class="provider-grid">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div id="provider-config" class="provider-config">
+            <div class="form-group">
+              <label for="provider-api-key">API Key</label>
+              <div class="input-wrapper">
+                <input type="password" id="provider-api-key" placeholder="Enter your API key" class="input">
+                <button type="button" id="toggle-visibility" class="input-icon-btn" title="Toggle visibility">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-eye">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-eye-off hidden">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <p id="api-key-help" class="help-text"></p>
+              <div id="api-status" class="status-badge hidden"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="model-select">Model</label>
+              <select id="model-select" class="select">
+                <!-- Dynamically populated -->
+              </select>
+              <p class="help-text">Faster models use less API quota. Larger models provide better quality.</p>
+            </div>
+
+            <button type="button" id="save-api-key" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Save API Key
+            </button>
+          </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section class="card">
+          <div class="card-header">
+            <div class="card-icon categories-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m5 12 5 5L20 7"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Issue Categories</h2>
+              <p>Enable or disable specific types of suggestions and adjust sensitivity levels.</p>
+            </div>
+          </div>
+
+          <div class="categories-grid">
+            <div class="category-card" data-category="spelling">
+              <div class="category-header">
+                <span class="category-indicator" style="--cat-color: #e53935"></span>
+                <span class="category-name">Spelling</span>
+                <label class="toggle">
+                  <input type="checkbox" id="cat-spelling" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <p class="category-description">Typos and misspellings</p>
+              <div class="category-controls">
+                <label class="control-label">Sensitivity</label>
+                <select id="sens-spelling" class="select-sm">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high" selected>High</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="category-card" data-category="grammar">
+              <div class="category-header">
+                <span class="category-indicator" style="--cat-color: #ff9800"></span>
+                <span class="category-name">Grammar</span>
+                <label class="toggle">
+                  <input type="checkbox" id="cat-grammar" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <p class="category-description">Subject-verb agreement, tense, articles</p>
+              <div class="category-controls">
+                <label class="control-label">Sensitivity</label>
+                <select id="sens-grammar" class="select-sm">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high" selected>High</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="category-card" data-category="style">
+              <div class="category-header">
+                <span class="category-indicator" style="--cat-color: #2196f3"></span>
+                <span class="category-name">Style</span>
+                <label class="toggle">
+                  <input type="checkbox" id="cat-style" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <p class="category-description">Wordiness, passive voice, repetition</p>
+              <div class="category-controls">
+                <label class="control-label">Sensitivity</label>
+                <select id="sens-style" class="select-sm">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="category-card" data-category="clarity">
+              <div class="category-header">
+                <span class="category-indicator" style="--cat-color: #9c27b0"></span>
+                <span class="category-name">Clarity</span>
+                <label class="toggle">
+                  <input type="checkbox" id="cat-clarity" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <p class="category-description">Unclear or ambiguous sentences</p>
+              <div class="category-controls">
+                <label class="control-label">Sensitivity</label>
+                <select id="sens-clarity" class="select-sm">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="category-card" data-category="tone">
+              <div class="category-header">
+                <span class="category-indicator" style="--cat-color: #4caf50"></span>
+                <span class="category-name">Tone</span>
+                <label class="toggle">
+                  <input type="checkbox" id="cat-tone">
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <p class="category-description">Formality mismatches</p>
+              <div class="category-controls">
+                <label class="control-label">Sensitivity</label>
+                <select id="sens-tone" class="select-sm">
+                  <option value="low" selected>Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Ignored Words Section -->
+        <section class="card">
+          <div class="card-header">
+            <div class="card-icon ignored-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Ignored Words</h2>
+              <p>Words that won't be flagged as spelling errors. Add technical terms, names, or jargon.</p>
+            </div>
+          </div>
+
           <div class="form-group">
-            <label for="provider-api-key">API Key</label>
-            <div class="input-group">
-              <input type="password" id="provider-api-key" placeholder="Enter your API key">
-              <button type="button" id="toggle-visibility" class="btn btn-icon" title="Toggle visibility">
-                👁
+            <div class="input-with-button">
+              <input type="text" id="new-word" placeholder="Add a word to ignore" class="input">
+              <button type="button" id="add-word" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Add
               </button>
             </div>
-            <p id="api-key-help" class="help-text"></p>
-            <div id="api-status" class="status-badge hidden"></div>
           </div>
-          <div class="form-group">
-            <label for="model-select">Model</label>
-            <select id="model-select">
-              <!-- Dynamically populated -->
-            </select>
-            <p class="help-text">Faster models use less API quota. Larger models provide better quality.</p>
+
+          <div id="ignored-words-list" class="tags-container">
+            <!-- Dynamically populated -->
           </div>
-          <button type="button" id="save-api-key" class="btn btn-primary">Save API Key</button>
+        </section>
+
+        <!-- Save Button -->
+        <div class="save-section">
+          <button type="button" id="save-settings" class="btn btn-primary btn-lg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save All Settings
+          </button>
+          <span id="save-status" class="save-status hidden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m5 12 5 5L20 7"/>
+            </svg>
+            Settings saved!
+          </span>
         </div>
-      </section>
-
-      <!-- Categories Section -->
-      <section class="section">
-        <h2>Issue Categories</h2>
-        <p class="section-description">Enable or disable specific types of suggestions</p>
-
-        <div class="categories-list">
-          <div class="category-item" data-category="spelling">
-            <div class="category-header">
-              <span class="category-dot" style="background: #e53935"></span>
-              <span class="category-name">Spelling</span>
-              <label class="toggle">
-                <input type="checkbox" id="cat-spelling" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <p class="category-description">Typos and misspellings</p>
-            <div class="sensitivity-control">
-              <label>Sensitivity:</label>
-              <select id="sens-spelling">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high" selected>High</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="category-item" data-category="grammar">
-            <div class="category-header">
-              <span class="category-dot" style="background: #ff9800"></span>
-              <span class="category-name">Grammar</span>
-              <label class="toggle">
-                <input type="checkbox" id="cat-grammar" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <p class="category-description">Subject-verb agreement, tense, articles</p>
-            <div class="sensitivity-control">
-              <label>Sensitivity:</label>
-              <select id="sens-grammar">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high" selected>High</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="category-item" data-category="style">
-            <div class="category-header">
-              <span class="category-dot" style="background: #2196f3"></span>
-              <span class="category-name">Style</span>
-              <label class="toggle">
-                <input type="checkbox" id="cat-style" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <p class="category-description">Wordiness, passive voice, repetition</p>
-            <div class="sensitivity-control">
-              <label>Sensitivity:</label>
-              <select id="sens-style">
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="category-item" data-category="clarity">
-            <div class="category-header">
-              <span class="category-dot" style="background: #9c27b0"></span>
-              <span class="category-name">Clarity</span>
-              <label class="toggle">
-                <input type="checkbox" id="cat-clarity" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <p class="category-description">Unclear or ambiguous sentences</p>
-            <div class="sensitivity-control">
-              <label>Sensitivity:</label>
-              <select id="sens-clarity">
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="category-item" data-category="tone">
-            <div class="category-header">
-              <span class="category-dot" style="background: #4caf50"></span>
-              <span class="category-name">Tone</span>
-              <label class="toggle">
-                <input type="checkbox" id="cat-tone">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <p class="category-description">Formality mismatches</p>
-            <div class="sensitivity-control">
-              <label>Sensitivity:</label>
-              <select id="sens-tone">
-                <option value="low" selected>Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Ignored Words Section -->
-      <section class="section">
-        <h2>Ignored Words</h2>
-        <p class="section-description">Words that won't be flagged as spelling errors</p>
-
-        <div class="form-group">
-          <div class="input-group">
-            <input type="text" id="new-word" placeholder="Add a word to ignore">
-            <button type="button" id="add-word" class="btn btn-secondary">Add</button>
-          </div>
-        </div>
-
-        <div id="ignored-words-list" class="tags-list">
-          <!-- Dynamically populated -->
-        </div>
-      </section>
-
-      <!-- Save Button -->
-      <div class="actions">
-        <button type="button" id="save-settings" class="btn btn-primary btn-large">Save All Settings</button>
-        <span id="save-status" class="save-status hidden">Settings saved!</span>
       </div>
     </main>
 
+    <!-- Footer -->
     <footer class="footer">
-      <p>AuroraWrite v1.0.0 • Powered by Groq</p>
+      <div class="footer-content">
+        <p id="version-display">AuroraWrite v1.0.0</p>
+        <nav class="footer-links">
+          <a href="../welcome/index.html" target="_blank">Welcome</a>
+          <span class="divider"></span>
+          <a href="https://hanif-mianjee.github.io/AuroraWrite/" target="_blank">Home</a>
+          <span class="divider"></span>
+          <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank">GitHub</a>
+        </nav>
+      </div>
     </footer>
   </div>
 

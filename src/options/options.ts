@@ -2,6 +2,7 @@ import { getSettings, saveSettings, saveApiKey, addIgnoredWord, removeIgnoredWor
 import type { Settings, CategorySettings, ProviderSettings } from '../shared/types/settings';
 import type { IssueCategory } from '../shared/types/analysis';
 import type { LLMProviderConfig, LLMProviderType } from '../shared/types/llm';
+import { getVersionDisplay } from '../shared/version';
 
 const CATEGORIES: IssueCategory[] = ['spelling', 'grammar', 'style', 'clarity', 'tone'];
 
@@ -158,11 +159,6 @@ class OptionsPage {
   }
 
   private setupEventListeners(): void {
-    document.getElementById('toggle-visibility')?.addEventListener('click', () => {
-      const input = document.getElementById('provider-api-key') as HTMLInputElement;
-      input.type = input.type === 'password' ? 'text' : 'password';
-    });
-
     document.getElementById('save-api-key')?.addEventListener('click', () => this.saveProviderApiKey());
 
     document.getElementById('add-word')?.addEventListener('click', () => this.addWord());
@@ -303,7 +299,43 @@ class OptionsPage {
   }
 }
 
+// Update version display
+function updateVersionDisplay(): void {
+  const versionText = getVersionDisplay();
+
+  // Update nav version badge
+  const navVersion = document.getElementById('nav-version');
+  if (navVersion) {
+    navVersion.textContent = versionText;
+  }
+
+  // Update footer version
+  const versionEl = document.getElementById('version-display');
+  if (versionEl) {
+    versionEl.textContent = `AuroraWrite ${versionText}`;
+  }
+}
+
+// Setup toggle visibility button
+function setupToggleVisibility(): void {
+  const toggleBtn = document.getElementById('toggle-visibility');
+  const input = document.getElementById('provider-api-key') as HTMLInputElement;
+  const eyeIcon = toggleBtn?.querySelector('.icon-eye');
+  const eyeOffIcon = toggleBtn?.querySelector('.icon-eye-off');
+
+  if (toggleBtn && input) {
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      eyeIcon?.classList.toggle('hidden', !isPassword);
+      eyeOffIcon?.classList.toggle('hidden', isPassword);
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  updateVersionDisplay();
+  setupToggleVisibility();
   const page = new OptionsPage();
   page.init();
 });

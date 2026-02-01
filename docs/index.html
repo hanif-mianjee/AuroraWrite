@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuroraWrite - AI-Powered Writing Assistant</title>
+  <meta name="description" content="Real-time grammar, spelling, and style suggestions powered by AI. Works anywhere on the web.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Animated Background -->
+    <div class="bg-gradient"></div>
+    <div class="bg-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="nav-container">
+        <a href="#" class="nav-brand">
+          <svg viewBox="0 0 128 128" class="nav-logo">
+            <defs>
+              <linearGradient id="navLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1976d2"/>
+                <stop offset="100%" style="stop-color:#7c4dff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="64" cy="64" r="60" fill="url(#navLogoGrad)"/>
+            <text x="64" y="82" font-family="Plus Jakarta Sans, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">A</text>
+            <path d="M30 100 Q64 85 98 100" stroke="#4caf50" stroke-width="6" fill="none" stroke-linecap="round"/>
+          </svg>
+          <span class="nav-title">AuroraWrite</span>
+        </a>
+
+        <div class="nav-links">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#how-it-works" class="nav-link">How It Works</a>
+          <a href="#architecture" class="nav-link">Architecture</a>
+          <a href="#providers" class="nav-link">AI Providers</a>
+        </div>
+
+        <div class="nav-actions">
+          <span class="nav-version" id="nav-version">v1.0.0</span>
+          <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank" class="btn btn-outline btn-sm">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            GitHub
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-badge animate-on-scroll">
+            <span class="badge-pulse"></span>
+            <span>Open Source AI Writing Assistant</span>
+          </div>
+
+          <h1 class="hero-title animate-on-scroll">
+            Write Better,<br>
+            <span class="gradient-text">Everywhere</span>
+          </h1>
+
+          <p class="hero-description animate-on-scroll">
+            Real-time grammar, spelling, and style suggestions powered by AI.
+            AuroraWrite works in any text field across the web, helping you
+            communicate with confidence.
+          </p>
+
+          <div class="hero-cta animate-on-scroll">
+            <button class="btn btn-primary btn-lg" id="install-btn">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Install Extension
+            </button>
+            <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank" class="btn btn-secondary btn-lg">
+              View Source
+            </a>
+          </div>
+
+          <div class="hero-stats animate-on-scroll">
+            <div class="stat">
+              <span class="stat-value">6+</span>
+              <span class="stat-label">AI Providers</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <span class="stat-value">6</span>
+              <span class="stat-label">Issue Categories</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <span class="stat-value">100%</span>
+              <span class="stat-label">Privacy-First</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual animate-on-scroll">
+          <div class="browser-frame">
+            <div class="browser-header">
+              <div class="browser-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="browser-address">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M2 12h20"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <span>example.com/compose</span>
+              </div>
+            </div>
+            <div class="browser-content">
+              <div class="compose-area">
+                <div class="compose-label">New Message</div>
+                <div class="compose-text">
+                  <p>
+                    Hi team,<br><br>
+
+                    I wanted to give you an update on the project. We have
+                    <span class="issue spelling" data-tooltip="Spelling: 'recieved' → 'received'">recieved</span>
+                    all the requirements and the development is
+                    <span class="issue grammar" data-tooltip="Grammar: 'progressing good' → 'progressing well'">progressing good</span>.
+                    <br><br>
+
+                    We
+                    <span class="issue style" data-tooltip="Style: Consider 'are reviewing' instead">are currently in the process of reviewing</span>
+                    the technical specifications. The team has been working
+                    <span class="issue clarity" data-tooltip="Clarity: Consider being more specific">really hard</span>
+                    to meet the deadline.
+                    <br><br>
+
+                    Best regards
+                  </p>
+                </div>
+
+                <!-- Floating Widget -->
+                <div class="widget-demo">
+                  <div class="widget-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
+                  </div>
+                  <div class="widget-content">
+                    <span class="widget-count">4</span>
+                    <span class="widget-label">suggestions</span>
+                  </div>
+                  <div class="widget-dots">
+                    <span class="dot spelling"></span>
+                    <span class="dot grammar"></span>
+                    <span class="dot style"></span>
+                    <span class="dot clarity"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Cards -->
+          <div class="floating-card card-1">
+            <div class="fc-icon spelling-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m5 12 5 5L20 7"/>
+              </svg>
+            </div>
+            <div class="fc-content">
+              <span class="fc-title">Spelling Fixed</span>
+              <span class="fc-desc">recieved → received</span>
+            </div>
+          </div>
+
+          <div class="floating-card card-2">
+            <div class="fc-icon style-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+              </svg>
+            </div>
+            <div class="fc-content">
+              <span class="fc-title">Style Improved</span>
+              <span class="fc-desc">More concise</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Features</span>
+          <h2 class="section-title">Everything You Need to Write Better</h2>
+          <p class="section-description">
+            Powerful writing assistance that works seamlessly in any text field
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card animate-on-scroll">
+            <div class="feature-icon spelling-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m5 12 5 5L20 7"/>
+              </svg>
+            </div>
+            <h3>Spelling Check</h3>
+            <p>Catch typos and misspellings with intelligent context-aware detection. Maintains a custom dictionary for your unique vocabulary.</p>
+            <div class="feature-color" style="background: var(--spelling)"></div>
+          </div>
+
+          <div class="feature-card animate-on-scroll">
+            <div class="feature-icon grammar-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 7V4h16v3"/>
+                <path d="M9 20h6"/>
+                <path d="M12 4v16"/>
+              </svg>
+            </div>
+            <h3>Grammar Analysis</h3>
+            <p>Advanced grammar checking for subject-verb agreement, tense consistency, article usage, and more.</p>
+            <div class="feature-color" style="background: var(--grammar)"></div>
+          </div>
+
+          <div class="feature-card animate-on-scroll">
+            <div class="feature-icon style-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+              </svg>
+            </div>
+            <h3>Style Suggestions</h3>
+            <p>Improve readability by identifying wordiness, passive voice, and repetitive phrases.</p>
+            <div class="feature-color" style="background: var(--style)"></div>
+          </div>
+
+          <div class="feature-card animate-on-scroll">
+            <div class="feature-icon clarity-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+              </svg>
+            </div>
+            <h3>Clarity Insights</h3>
+            <p>Identify unclear or ambiguous sentences that might confuse your readers.</p>
+            <div class="feature-color" style="background: var(--clarity)"></div>
+          </div>
+
+          <div class="feature-card animate-on-scroll">
+            <div class="feature-icon tone-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/>
+                <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>
+              </svg>
+            </div>
+            <h3>Tone Detection</h3>
+            <p>Ensure your writing matches the intended formality level for your audience.</p>
+            <div class="feature-color" style="background: var(--tone)"></div>
+          </div>
+
+          <div class="feature-card animate-on-scroll">
+            <div class="feature-icon rephrase-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 16h5v5"/>
+              </svg>
+            </div>
+            <h3>Text Transforms</h3>
+            <p>Select any text to rephrase, shorten, adjust tone, or translate with AI-powered transformations.</p>
+            <div class="feature-color" style="background: var(--rephrase)"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">How It Works</span>
+          <h2 class="section-title">Simple, Powerful, Private</h2>
+          <p class="section-description">
+            Get started in seconds and write with confidence anywhere on the web
+          </p>
+        </div>
+
+        <div class="steps-timeline">
+          <div class="timeline-line"></div>
+
+          <div class="step-item animate-on-scroll">
+            <div class="step-number">1</div>
+            <div class="step-card">
+              <h3>Install the Extension</h3>
+              <p>Add AuroraWrite to Chrome from the Web Store or load it as an unpacked extension for development.</p>
+            </div>
+          </div>
+
+          <div class="step-item animate-on-scroll">
+            <div class="step-number">2</div>
+            <div class="step-card">
+              <h3>Configure Your AI Provider</h3>
+              <p>Choose from 6+ AI providers including Groq (free), OpenAI, Gemini, Claude, and more. Enter your API key.</p>
+            </div>
+          </div>
+
+          <div class="step-item animate-on-scroll">
+            <div class="step-number">3</div>
+            <div class="step-card">
+              <h3>Start Writing</h3>
+              <p>Type in any text field on the web. AuroraWrite automatically analyzes your text and shows suggestions.</p>
+            </div>
+          </div>
+
+          <div class="step-item animate-on-scroll">
+            <div class="step-number">4</div>
+            <div class="step-card">
+              <h3>Review & Accept</h3>
+              <p>Click on underlined issues to see suggestions. Accept with one click or select text to transform it.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="architecture" id="architecture">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Under the Hood</span>
+          <h2 class="section-title">Built for Performance</h2>
+          <p class="section-description">
+            Innovative block-based analysis minimizes API calls and maximizes efficiency
+          </p>
+        </div>
+
+        <div class="arch-grid">
+          <div class="arch-card animate-on-scroll">
+            <div class="arch-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18"/>
+                <path d="M9 21V9"/>
+              </svg>
+            </div>
+            <h3>Block-Based Analysis</h3>
+            <p>Text is split into logical blocks. Only changed blocks are re-analyzed, reducing API calls by up to 80%.</p>
+          </div>
+
+          <div class="arch-card animate-on-scroll">
+            <div class="arch-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <h3>Stability Pass System</h3>
+            <p>Verification passes ensure accuracy with confidence scoring. Blocks stabilize at 80% confidence.</p>
+          </div>
+
+          <div class="arch-card animate-on-scroll">
+            <div class="arch-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 7h-9"/>
+                <path d="M14 17H5"/>
+                <circle cx="17" cy="17" r="3"/>
+                <circle cx="7" cy="7" r="3"/>
+              </svg>
+            </div>
+            <h3>Hash-Based Detection</h3>
+            <p>Cryptographic hashing detects dirty blocks instantly. No redundant processing of unchanged content.</p>
+          </div>
+
+          <div class="arch-card animate-on-scroll">
+            <div class="arch-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4"/>
+                <path d="m6.8 15-3.5 2"/>
+                <path d="m20.7 17-3.5-2"/>
+                <path d="m6.8 9-3.5-2"/>
+                <path d="m20.7 7-3.5 2"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </div>
+            <h3>Shadow DOM Isolation</h3>
+            <p>All UI components use Shadow DOM to prevent style conflicts with host pages.</p>
+          </div>
+        </div>
+
+        <!-- Architecture Diagram -->
+        <div class="arch-diagram animate-on-scroll">
+          <div class="arch-flow">
+            <div class="flow-node user">
+              <span>User Types</span>
+            </div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node content">
+              <span>Content Script</span>
+              <small>700ms debounce</small>
+            </div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node block">
+              <span>Block Splitter</span>
+              <small>Hash detection</small>
+            </div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node background">
+              <span>Background Worker</span>
+              <small>LLM API calls</small>
+            </div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node overlay">
+              <span>Overlay Update</span>
+              <small>Incremental</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Providers Section -->
+    <section class="providers" id="providers">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">AI Providers</span>
+          <h2 class="section-title">Choose Your AI</h2>
+          <p class="section-description">
+            Works with multiple AI providers. Pick the one that fits your needs.
+          </p>
+        </div>
+
+        <div class="providers-grid">
+          <div class="provider-card animate-on-scroll">
+            <div class="provider-logo groq">G</div>
+            <h3>Groq</h3>
+            <span class="provider-badge free">Free Tier</span>
+            <p>Ultra-fast inference with Llama models. Recommended for most users.</p>
+          </div>
+
+          <div class="provider-card animate-on-scroll">
+            <div class="provider-logo openai">O</div>
+            <h3>OpenAI</h3>
+            <span class="provider-badge paid">Paid</span>
+            <p>GPT-4 and GPT-3.5 models. Industry-leading accuracy.</p>
+          </div>
+
+          <div class="provider-card animate-on-scroll">
+            <div class="provider-logo gemini">G</div>
+            <h3>Gemini</h3>
+            <span class="provider-badge free">Free Tier</span>
+            <p>Google's multimodal AI. Great balance of speed and quality.</p>
+          </div>
+
+          <div class="provider-card animate-on-scroll">
+            <div class="provider-logo anthropic">A</div>
+            <h3>Anthropic</h3>
+            <span class="provider-badge paid">Paid</span>
+            <p>Claude models. Excellent for nuanced writing assistance.</p>
+          </div>
+
+          <div class="provider-card animate-on-scroll">
+            <div class="provider-logo together">T</div>
+            <h3>Together</h3>
+            <span class="provider-badge free">Free Tier</span>
+            <p>Access to various open-source models with competitive pricing.</p>
+          </div>
+
+          <div class="provider-card animate-on-scroll">
+            <div class="provider-logo mistral">M</div>
+            <h3>Mistral</h3>
+            <span class="provider-badge paid">Partial</span>
+            <p>Efficient European AI models. Great for multilingual content.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-content animate-on-scroll">
+          <h2>Ready to Write Better?</h2>
+          <p>Join developers and writers who use AuroraWrite to communicate with confidence.</p>
+          <div class="cta-buttons">
+            <button class="btn btn-primary btn-lg" id="cta-install-btn">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Install Extension
+            </button>
+            <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank" class="btn btn-white btn-lg">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              Star on GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <svg viewBox="0 0 128 128" class="footer-logo-icon">
+                <defs>
+                  <linearGradient id="footerLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#1976d2"/>
+                    <stop offset="100%" style="stop-color:#7c4dff"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="64" cy="64" r="60" fill="url(#footerLogoGrad)"/>
+                <text x="64" y="82" font-family="Plus Jakarta Sans, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">A</text>
+                <path d="M30 100 Q64 85 98 100" stroke="#4caf50" stroke-width="6" fill="none" stroke-linecap="round"/>
+              </svg>
+              <span>AuroraWrite</span>
+            </div>
+            <p>AI-powered writing assistant for everyone.</p>
+          </div>
+
+          <div class="footer-links">
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#providers">AI Providers</a>
+          </div>
+
+          <div class="footer-links">
+            <h4>Resources</h4>
+            <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank">GitHub Repository</a>
+            <a href="https://github.com/hanif-mianjee/AuroraWrite/issues" target="_blank">Report Issues</a>
+            <a href="https://github.com/hanif-mianjee/AuroraWrite/blob/main/README.md" target="_blank">Documentation</a>
+          </div>
+
+          <div class="footer-links">
+            <h4>Legal</h4>
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Use</a>
+            <a href="license.html">MIT License</a>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>
+            Made with care by
+            <a href="https://github.com/hanif-mianjee" target="_blank">Hanif Mianjee</a>
+          </p>
+          <p id="footer-version">AuroraWrite v1.0.0</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="home.js"></script>
+</body>
+</html>

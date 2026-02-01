@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to AuroraWrite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Animated Background -->
+    <div class="bg-gradient"></div>
+    <div class="bg-pattern"></div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="nav-brand">
+        <div class="logo">
+          <svg viewBox="0 0 128 128" class="logo-icon">
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1976d2"/>
+                <stop offset="100%" style="stop-color:#7c4dff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="64" cy="64" r="60" fill="url(#logoGrad)"/>
+            <text x="64" y="82" font-family="Plus Jakarta Sans, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">A</text>
+            <path d="M30 100 Q64 85 98 100" stroke="#4caf50" stroke-width="6" fill="none" stroke-linecap="round"/>
+          </svg>
+          <span class="logo-text">AuroraWrite</span>
+        </div>
+      </div>
+      <div class="nav-version" id="version-badge">v1.0.0</div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="main">
+      <section class="hero">
+        <div class="hero-content">
+          <div class="hero-badge animate-fade-in">
+            <span class="badge-icon">✨</span>
+            <span>Welcome to AuroraWrite</span>
+          </div>
+
+          <h1 class="hero-title animate-fade-in-up">
+            Write with <span class="gradient-text">Confidence</span>
+          </h1>
+
+          <p class="hero-description animate-fade-in-up delay-1">
+            Your AI-powered writing assistant is ready. Get real-time grammar, spelling,
+            and style suggestions as you type—anywhere on the web.
+          </p>
+
+          <!-- Quick Setup Steps -->
+          <div class="setup-steps animate-fade-in-up delay-2">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h3>Configure API Key</h3>
+                <p>Connect your preferred AI provider</p>
+              </div>
+              <div class="step-status" id="step-1-status">
+                <span class="status-pending">Pending</span>
+              </div>
+            </div>
+
+            <div class="step-connector"></div>
+
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h3>Start Writing</h3>
+                <p>Type in any text field to see suggestions</p>
+              </div>
+              <div class="step-status">
+                <span class="status-ready">Ready</span>
+              </div>
+            </div>
+
+            <div class="step-connector"></div>
+
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h3>Improve & Transform</h3>
+                <p>Select text to rephrase, shorten, or change tone</p>
+              </div>
+              <div class="step-status">
+                <span class="status-ready">Ready</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA Buttons -->
+          <div class="hero-actions animate-fade-in-up delay-3">
+            <button class="btn btn-primary" id="open-settings">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Configure Settings
+            </button>
+
+            <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank" class="btn btn-secondary">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+
+        <!-- Hero Visual -->
+        <div class="hero-visual animate-fade-in-left delay-2">
+          <div class="demo-window">
+            <div class="demo-titlebar">
+              <div class="demo-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="demo-title">example.com</span>
+            </div>
+            <div class="demo-content">
+              <div class="demo-textarea">
+                <p class="demo-text">
+                  I have recieved your message and I
+                  <span class="underline-spelling">definately</span>
+                  understand what you mean. The project is
+                  <span class="underline-grammar">progressing good</span>
+                  and we
+                  <span class="underline-style">are currently in the process of</span>
+                  reviewing all the documents.
+                </p>
+
+                <!-- Floating Widget Demo -->
+                <div class="demo-widget">
+                  <div class="widget-header">
+                    <span class="widget-icon">📝</span>
+                    <span class="widget-count">3 suggestions</span>
+                  </div>
+                  <div class="widget-categories">
+                    <span class="cat-dot spelling"></span>
+                    <span class="cat-label">1 spelling</span>
+                    <span class="cat-dot grammar"></span>
+                    <span class="cat-label">1 grammar</span>
+                    <span class="cat-dot style"></span>
+                    <span class="cat-label">1 style</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Suggestion Popover Demo -->
+              <div class="demo-popover">
+                <div class="popover-header">
+                  <span class="popover-cat spelling">Spelling</span>
+                  <span class="popover-confidence">98%</span>
+                </div>
+                <div class="popover-body">
+                  <div class="popover-original">"definately"</div>
+                  <div class="popover-arrow">→</div>
+                  <div class="popover-suggestion">"definitely"</div>
+                </div>
+                <div class="popover-actions">
+                  <button class="popover-btn accept">Accept</button>
+                  <button class="popover-btn ignore">Ignore</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Preview -->
+      <section class="features animate-fade-in-up delay-4">
+        <h2 class="section-title">What You Can Do</h2>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon spelling-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m5 12 5 5L20 7"/>
+              </svg>
+            </div>
+            <h3>Spelling & Grammar</h3>
+            <p>Catch typos, grammar mistakes, and punctuation errors in real-time</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon style-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+              </svg>
+            </div>
+            <h3>Style Improvements</h3>
+            <p>Get suggestions for clearer, more concise writing</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon clarity-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/>
+                <path d="M3 16.2V21m0 0h4.8M3 21l6-6"/>
+                <path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/>
+                <path d="M3 7.8V3m0 0h4.8M3 3l6 6"/>
+              </svg>
+            </div>
+            <h3>Text Transforms</h3>
+            <p>Rephrase, shorten, or adjust tone with one click</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon tone-bg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4"/>
+                <path d="m6.8 15-3.5 2"/>
+                <path d="m20.7 17-3.5-2"/>
+                <path d="M6.8 9 3.3 7"/>
+                <path d="m20.7 7-3.5 2"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </div>
+            <h3>Multiple AI Providers</h3>
+            <p>Choose from Groq, OpenAI, Gemini, Claude & more</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>
+        Made with care by
+        <a href="https://github.com/hanif-mianjee" target="_blank">Hanif Mianjee</a>
+        ·
+        <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank">GitHub</a>
+        ·
+        <span id="footer-version">v1.0.0</span>
+      </p>
+    </footer>
+  </div>
+
+  <script type="module" src="welcome.ts"></script>
+</body>
+</html>
