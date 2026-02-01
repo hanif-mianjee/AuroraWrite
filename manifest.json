@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AuroraWrite",
   "description": "AI-powered writing assistant with real-time grammar, spelling, and style suggestions",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "icons": {
     "16": "src/assets/icons/icon16.png",
     "48": "src/assets/icons/icon48.png",

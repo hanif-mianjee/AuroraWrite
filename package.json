@@ -1,6 +1,6 @@
 {
   "name": "aurora-write",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "AI-powered writing assistant Chrome extension with real-time grammar, spelling, and style suggestions",
   "type": "module",
   "author": "Hanif Mianjee",
@@ -21,12 +21,13 @@
     "version:patch": "node scripts/release.js patch",
     "version:minor": "node scripts/release.js minor",
     "version:major": "node scripts/release.js major",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "package": "npm run build && (cd dist && zip -r ../aurora-write-$npm_package_version.zip .)"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.25",
     "@types/chrome": "^0.1.36",
     "typescript": "^5.3.3",
-    "vite": "^5.4.2"
+    "vite": "^7.3.1"
   }
 }

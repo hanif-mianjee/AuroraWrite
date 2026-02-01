@@ -8,7 +8,7 @@
 // Version is injected at build time via Vite's define option
 declare const __APP_VERSION__: string;
 
-export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
 
 export const VERSION_INFO = {
   version: VERSION,
