@@ -284,7 +284,7 @@ export class FloatingWidget {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 8px 12px;
+        padding: 8px;
         color: #059669;
         cursor: pointer;
         transition: background 0.15s;
@@ -293,21 +293,31 @@ export class FloatingWidget {
       .aurora-clean:hover {
         background: #f9fafb;
       }
-      .aurora-check {
-        font-size: 18px;
+      .aurora-clean-icon {
+        width: 20px;
+        height: 20px;
         transition: opacity 0.15s;
       }
-      .aurora-refresh {
-        font-size: 18px;
+      .aurora-clean-icon svg {
+        width: 100%;
+        height: 100%;
+      }
+      .aurora-refresh-icon {
+        width: 20px;
+        height: 20px;
         position: absolute;
         opacity: 0;
         transition: opacity 0.15s;
         color: #6366f1;
       }
-      .aurora-clean:hover .aurora-check {
+      .aurora-refresh-icon svg {
+        width: 100%;
+        height: 100%;
+      }
+      .aurora-clean:hover .aurora-clean-icon {
         opacity: 0;
       }
-      .aurora-clean:hover .aurora-refresh {
+      .aurora-clean:hover .aurora-refresh-icon {
         opacity: 1;
       }
       .aurora-error {
@@ -403,8 +413,18 @@ export class FloatingWidget {
     if (state === 'clean') {
       return `
         <div class="aurora-clean" data-action="reanalyze" title="Click to re-analyze">
-          <span class="aurora-check">✓</span>
-          <span class="aurora-refresh">↻</span>
+          <span class="aurora-clean-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </span>
+          <span class="aurora-refresh-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+            </svg>
+          </span>
         </div>
       `;
     }

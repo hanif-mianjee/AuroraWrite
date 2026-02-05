@@ -31,11 +31,20 @@ class OptionsPage {
   }
 
   private async cleanupIgnoredDomains(): Promise<void> {
-    // Only clean up truly invalid entries (null, undefined, empty string)
     if (!this.settings) return;
 
     const ignoredDomains = this.settings.ignoredDomains || [];
     console.log('[AuroraWrite Options] Current ignored domains:', ignoredDomains);
+
+    // Filter out empty/invalid domains
+    const validDomains = ignoredDomains.filter(d => d && typeof d === 'string' && d.trim().length > 0);
+
+    // If there were invalid entries, clean them up
+    if (validDomains.length !== ignoredDomains.length) {
+      console.log('[AuroraWrite Options] Cleaning up invalid domains. Removed:', ignoredDomains.length - validDomains.length);
+      await saveSettings({ ignoredDomains: validDomains });
+      this.settings = await getSettings();
+    }
   }
 
   private async loadProviders(): Promise<void> {
