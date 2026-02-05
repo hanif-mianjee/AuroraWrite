@@ -64,3 +64,31 @@ export async function getProviderSettings(): Promise<ProviderSettings | undefine
   const settings = await getSettings();
   return settings.providerSettings;
 }
+
+export async function getIgnoredDomains(): Promise<string[]> {
+  const settings = await getSettings();
+  return settings.ignoredDomains || [];
+}
+
+export async function addIgnoredDomain(domain: string): Promise<void> {
+  const settings = await getSettings();
+  const ignoredDomains = settings.ignoredDomains || [];
+  if (!ignoredDomains.includes(domain.toLowerCase())) {
+    ignoredDomains.push(domain.toLowerCase());
+    await saveSettings({ ignoredDomains });
+  }
+}
+
+export async function removeIgnoredDomain(domain: string): Promise<void> {
+  const settings = await getSettings();
+  const ignoredDomains = (settings.ignoredDomains || []).filter(
+    (d) => d !== domain.toLowerCase()
+  );
+  await saveSettings({ ignoredDomains });
+}
+
+export async function isDomainIgnored(domain: string): Promise<boolean> {
+  const settings = await getSettings();
+  const ignoredDomains = settings.ignoredDomains || [];
+  return ignoredDomains.includes(domain.toLowerCase());
+}

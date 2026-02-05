@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, saveApiKey, addIgnoredWord, removeIgnoredWord, saveProviderSettings } from '../shared/utils/storage';
+import { getSettings, saveSettings, saveApiKey, addIgnoredWord, removeIgnoredWord, addIgnoredDomain, removeIgnoredDomain, saveProviderSettings } from '../shared/utils/storage';
 import type { Settings, CategorySettings, ProviderSettings } from '../shared/types/settings';
 import type { IssueCategory } from '../shared/types/analysis';
 import type { LLMProviderConfig, LLMProviderType } from '../shared/types/llm';
@@ -59,6 +59,7 @@ class OptionsPage {
     }
 
     this.renderIgnoredWords();
+    this.renderIgnoredDomains();
   }
 
   private renderProviderGrid(): void {
@@ -142,11 +143,49 @@ class OptionsPage {
       )
       .join('');
 
-    container.querySelectorAll('.tag-remove').forEach((btn) => {
+    container.querySelectorAll('.tag-remove[data-word]').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
-        const word = (e.target as HTMLElement).getAttribute('data-word');
+        e.preventDefault();
+        e.stopPropagation();
+        const button = (e.currentTarget as HTMLElement);
+        const word = button.getAttribute('data-word');
         if (word) {
           await this.removeWord(word);
+        }
+      });
+    });
+  }
+
+  private renderIgnoredDomains(): void {
+    const container = document.getElementById('ignored-domains-list');
+    if (!container || !this.settings) return;
+
+    const ignoredDomains = this.settings.ignoredDomains || [];
+
+    if (ignoredDomains.length === 0) {
+      container.innerHTML = '<span class="tags-empty">No ignored websites</span>';
+      return;
+    }
+
+    container.innerHTML = ignoredDomains
+      .map(
+        (domain) => `
+        <span class="tag tag-domain">
+          ${this.escapeHtml(domain)}
+          <button class="tag-remove" data-domain="${this.escapeHtml(domain)}" title="Remove">×</button>
+        </span>
+      `
+      )
+      .join('');
+
+    container.querySelectorAll('.tag-remove[data-domain]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const button = (e.currentTarget as HTMLElement);
+        const domain = button.getAttribute('data-domain');
+        if (domain) {
+          await this.removeDomain(domain);
         }
       });
     });
@@ -166,6 +205,14 @@ class OptionsPage {
     document.getElementById('new-word')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         this.addWord();
+      }
+    });
+
+    document.getElementById('add-domain')?.addEventListener('click', () => this.addDomain());
+
+    document.getElementById('new-domain')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        this.addDomain();
       }
     });
 
@@ -256,6 +303,27 @@ class OptionsPage {
     await removeIgnoredWord(word);
     this.settings = await getSettings();
     this.renderIgnoredWords();
+  }
+
+  private async addDomain(): Promise<void> {
+    const input = document.getElementById('new-domain') as HTMLInputElement;
+    let domain = input.value.trim().toLowerCase();
+
+    if (!domain) return;
+
+    // Clean up the domain (remove protocol, path, etc.)
+    domain = domain.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+
+    await addIgnoredDomain(domain);
+    this.settings = await getSettings();
+    this.renderIgnoredDomains();
+    input.value = '';
+  }
+
+  private async removeDomain(domain: string): Promise<void> {
+    await removeIgnoredDomain(domain);
+    this.settings = await getSettings();
+    this.renderIgnoredDomains();
   }
 
   private async saveAllSettings(): Promise<void> {
