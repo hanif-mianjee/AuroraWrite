@@ -119,75 +119,110 @@ npm run package  # Build + create ZIP for distribution
 ## Directory Structure
 
 ```
-src/
-├── ai/                              # Analysis orchestration
-│   ├── index.ts                    # Exports
-│   ├── blockAnalyzer.ts            # Incremental block analysis coordinator
-│   └── stabilityPassManager.ts     # Post-analysis verification system
-│
-├── background/                      # Background service worker
-│   ├── index.ts                    # Message handler (306 lines)
-│   ├── cache-manager.ts            # API response caching
-│   ├── rate-limiter.ts             # API rate limiting
-│   └── providers/                  # LLM provider implementations
-│       ├── base-provider.ts        # Abstract base with prompts (517 lines)
-│       ├── llm-factory.ts          # Factory pattern
-│       ├── groq-provider.ts        # Groq API
-│       ├── openai-provider.ts      # OpenAI GPT
-│       ├── gemini-provider.ts      # Google Gemini
-│       ├── anthropic-provider.ts   # Anthropic Claude
-│       ├── together-provider.ts    # Together AI
-│       └── mistral-provider.ts     # Mistral API
-│
-├── block/                           # Text block management
-│   ├── blockSplitter.ts            # Split text into logical blocks
-│   └── blockHasher.ts              # Hash-based dirty detection
-│
-├── content/                         # Content script & UI (917 lines main)
-│   ├── index.ts                    # Main AuroraWrite class
-│   ├── detector/                   # Text field detection
-│   │   ├── text-field-detector.ts  # Detects textarea/contenteditable
-│   │   ├── textarea-handler.ts     # Textarea/input text operations
-│   │   └── contenteditable-handler.ts # Contenteditable operations
-│   ├── overlay/                    # Issue visualization
-│   │   ├── overlay-manager.ts      # Manages overlay per field
-│   │   └── underline-renderer.ts   # Renders colored underlines
-│   ├── widget/                     # Floating action widget
-│   │   └── floating-widget.ts      # Issue count badge (580 lines)
-│   ├── popover/                    # Suggestion detail popover
-│   │   └── suggestion-popover.ts   # Accept/ignore UI (259 lines)
-│   └── selection/                  # Text selection & transform
-│       ├── selection-handler.ts    # Selection detection
-│       ├── selection-trigger.ts    # Transform button
-│       └── transform-popover.ts    # Transform options UI
-│
-├── state/                           # State management
-│   └── inputTextStore.ts           # Per-field state (659 lines)
-│
-├── shared/                          # Shared code
-│   ├── types/
-│   │   ├── analysis.ts             # TextIssue, AnalysisResult
-│   │   ├── messages.ts             # 24 message types
-│   │   ├── settings.ts             # Settings interfaces
-│   │   └── llm.ts                  # LLMProvider interface
-│   ├── constants/
-│   │   ├── categories.ts           # CategoryRegistry (6 categories)
-│   │   └── transformers.ts         # TransformerRegistry (7 transforms)
-│   ├── utils/
-│   │   ├── debounce.ts             # 700ms debounce utility
-│   │   ├── storage.ts              # Chrome storage wrapper
-│   │   └── performance.ts          # Performance logging
-│   └── version.ts                  # Version constant
-│
-├── options/                         # Settings page
-│   ├── index.html
-│   ├── options.ts                  # Settings logic (410 lines)
-│   └── options.css                 # Styling (833 lines)
-│
-└── welcome/                         # Welcome page
-    ├── index.html
-    ├── welcome.ts
-    └── welcome.css
+/ (project root)
+├── CHROME_STORE_PUBLISHING_GUIDE.md  # Chrome Web Store publishing checklist & requirements
+├── CLAUDE.md                          # This file - complete developer handover doc
+├── DESIGN.md                          # Design philosophy and architecture decisions
+├── LICENSE                            # MIT License
+├── README.md                          # Public-facing documentation
+├── manifest.json                      # Chrome Extension Manifest v3
+├── package.json                       # NPM dependencies and scripts
+├── tsconfig.json                      # TypeScript configuration (strict mode)
+├── vite.config.ts                     # Vite bundler config with @crxjs/vite-plugin
+├── screenshot-generator.html          # Tool to generate Chrome Store assets (screenshots, icons, tiles)
+├── generate-icons.sh                  # Automated script to convert SVG icon to PNG (16/32/48/128px)
+├── reminders.md                       # Development reminders and notes
+├── dist/                              # Build output (load this in Chrome)
+├── node_modules/                      # NPM dependencies
+├── scripts/
+│   ├── release.js                    # Automated release script (version bump + build + tag)
+│   └── version-sync.js               # Syncs version across package.json, manifest.json, docs/home.js
+├── docs/                              # GitHub Pages website (https://hanif-mianjee.github.io/AuroraWrite/)
+│   ├── home.css                      # Website styling
+│   ├── home.js                       # Website JavaScript
+│   ├── index.html                    # Website homepage
+│   ├── legal.css                     # Legal pages styling
+│   ├── license.html                  # License page
+│   ├── privacy.html                  # Privacy policy (linked in Chrome Store)
+│   ├── terms.html                    # Terms of service
+│   └── tests.html                    # Test page for extension features
+├── src/
+│   ├── ai/                              # Analysis orchestration
+│   │   ├── index.ts                    # Exports
+│   │   ├── blockAnalyzer.ts            # Incremental block analysis coordinator
+│   │   └── stabilityPassManager.ts     # Post-analysis verification system
+│   │
+│   ├── assets/                          # Static assets
+│   │   └── icons/                      # Extension icons
+│   │       └── icon.svg                # Source SVG icon (128×128 viewBox)
+│   │
+│   ├── background/                      # Background service worker
+│   │   ├── index.ts                    # Message handler (306 lines)
+│   │   ├── cache-manager.ts            # API response caching
+│   │   ├── rate-limiter.ts             # API rate limiting
+│   │   └── providers/                  # LLM provider implementations
+│   │       ├── base-provider.ts        # Abstract base with prompts (517 lines)
+│   │       ├── llm-factory.ts          # Factory pattern
+│   │       ├── groq-provider.ts        # Groq API
+│   │       ├── openai-provider.ts      # OpenAI GPT
+│   │       ├── gemini-provider.ts      # Google Gemini
+│   │       ├── anthropic-provider.ts   # Anthropic Claude
+│   │       ├── together-provider.ts    # Together AI
+│   │       └── mistral-provider.ts     # Mistral API
+│   │
+│   ├── block/                           # Text block management
+│   │   ├── blockSplitter.ts            # Split text into logical blocks
+│   │   └── blockHasher.ts              # Hash-based dirty detection
+│   │
+│   ├── content/                         # Content script & UI (917 lines main)
+│   │   ├── index.ts                    # Main AuroraWrite class
+│   │   ├── detector/                   # Text field detection
+│   │   │   ├── text-field-detector.ts  # Detects textarea/contenteditable
+│   │   │   ├── textarea-handler.ts     # Textarea/input text operations
+│   │   │   └── contenteditable-handler.ts # Contenteditable operations
+│   │   ├── overlay/                    # Issue visualization
+│   │   │   ├── overlay-manager.ts      # Manages overlay per field
+│   │   │   └── underline-renderer.ts   # Renders colored underlines
+│   │   ├── widget/                     # Floating action widget
+│   │   │   └── floating-widget.ts      # Issue count badge (580 lines)
+│   │   ├── popover/                    # Suggestion detail popover
+│   │   │   └── suggestion-popover.ts   # Accept/ignore UI (259 lines)
+│   │   └── selection/                  # Text selection & transform
+│   │       ├── selection-handler.ts    # Selection detection
+│   │       ├── selection-trigger.ts    # Transform button
+│   │       └── transform-popover.ts    # Transform options UI
+│   │
+│   ├── merge/                           # Result merging utilities
+│   │   ├── index.ts                    # Exports
+│   │   └── resultMerger.ts             # Merges analysis results from multiple blocks
+│   │
+│   ├── state/                           # State management
+│   │   └── inputTextStore.ts           # Per-field state (659 lines)
+│   │
+│   ├── shared/                          # Shared code
+│   │   ├── types/
+│   │   │   ├── analysis.ts             # TextIssue, AnalysisResult
+│   │   │   ├── messages.ts             # 24 message types
+│   │   │   ├── settings.ts             # Settings interfaces
+│   │   │   └── llm.ts                  # LLMProvider interface
+│   │   ├── constants/
+│   │   │   ├── categories.ts           # CategoryRegistry (6 categories)
+│   │   │   └── transformers.ts         # TransformerRegistry (7 transforms)
+│   │   ├── utils/
+│   │   │   ├── debounce.ts             # 700ms debounce utility
+│   │   │   ├── storage.ts              # Chrome storage wrapper
+│   │   │   └── performance.ts          # Performance logging
+│   │   └── version.ts                  # Version constant
+│   │
+│   ├── options/                         # Settings page
+│   │   ├── index.html
+│   │   ├── options.ts                  # Settings logic (410 lines)
+│   │   └── options.css                 # Styling (833 lines)
+│   │
+│   └── welcome/                         # Welcome page
+│       ├── index.html
+│       ├── welcome.ts
+│       └── welcome.css
 ```
 
 ---

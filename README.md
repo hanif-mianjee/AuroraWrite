@@ -110,24 +110,52 @@ User Types → Content Script (700ms debounce) → Split into Blocks → Detect 
 ## Project Structure
 
 ```
-src/
-├── ai/                  # Analysis orchestration
-│   ├── blockAnalyzer.ts
-│   └── stabilityPassManager.ts
-├── background/          # Service worker
-│   ├── index.ts
-│   └── providers/       # LLM provider implementations
-├── block/               # Block splitting & hashing
-├── content/             # Content script & UI
-│   ├── detector/        # Field detection
-│   ├── overlay/         # Underline rendering
-│   ├── widget/          # Floating widget
-│   ├── popover/         # Suggestion popover
-│   └── selection/       # Text transform UI
-├── options/             # Settings page
-├── welcome/             # Welcome page
-├── shared/              # Shared types & utilities
-└── state/               # State management
+/ (project root)
+├── CHROME_STORE_PUBLISHING_GUIDE.md  # Chrome Web Store publishing guide
+├── CLAUDE.md                          # Developer handover documentation
+├── DESIGN.md                          # Design philosophy
+├── LICENSE                            # MIT License
+├── README.md                          # This file
+├── manifest.json                      # Chrome Extension Manifest v3
+├── package.json                       # NPM dependencies and scripts
+├── tsconfig.json                      # TypeScript configuration
+├── vite.config.ts                     # Vite bundler configuration
+├── screenshot-generator.html          # Chrome Store asset generator (screenshots, icons, tiles)
+├── generate-icons.sh                  # SVG to PNG icon converter
+├── reminders.md                       # Development notes
+├── dist/                              # Build output
+├── node_modules/                      # NPM dependencies
+├── scripts/
+│   ├── release.js                    # Release automation
+│   └── version-sync.js               # Version synchronization
+├── docs/                              # GitHub Pages website
+│   ├── index.html
+│   ├── privacy.html                  # Privacy policy
+│   └── ...
+├── src/
+│   ├── ai/                           # Analysis orchestration
+│   │   ├── blockAnalyzer.ts
+│   │   └── stabilityPassManager.ts
+│   ├── assets/                       # Static assets
+│   │   └── icons/
+│   ├── background/                   # Service worker
+│   │   ├── index.ts
+│   │   └── providers/                # LLM provider implementations
+│   ├── block/                        # Block splitting & hashing
+│   ├── content/                      # Content script & UI
+│   │   ├── detector/                 # Field detection
+│   │   ├── overlay/                  # Underline rendering
+│   │   ├── widget/                   # Floating widget
+│   │   ├── popover/                  # Suggestion popover
+│   │   └── selection/                # Text transform UI
+│   ├── merge/                        # Result merging
+│   ├── options/                      # Settings page
+│   ├── shared/                       # Shared types & utilities
+│   │   ├── constants/
+│   │   ├── types/
+│   │   └── utils/
+│   ├── state/                        # State management
+│   └── welcome/                      # Welcome page
 ```
 
 ## Extending Functionality
