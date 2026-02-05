@@ -652,6 +652,14 @@ body {
   font-weight: 500;
 }
 
+.tag-text {
+  display: inline-block;
+  white-space: nowrap;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
 .tag.tag-domain {
   background: rgba(124, 77, 255, 0.15);
   color: #5e35b1;

@@ -43,23 +43,41 @@ export class SuggestionPopover {
   private positionPopover(anchorRect: DOMRect): void {
     if (!this.popover) return;
 
+    // First set a temporary position to measure the popover
+    this.popover.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      visibility: hidden;
+      z-index: 2147483647;
+      isolation: isolate;
+    `;
+
+    // Force layout calculation
+    const popoverRect = this.popover.getBoundingClientRect();
+
+    // Calculate position based on anchor (underline)
     let top = anchorRect.bottom + 8;
     let left = anchorRect.left;
 
-    const popoverRect = this.popover.getBoundingClientRect();
-
+    // Adjust if popover would go off the right edge
     if (left + popoverRect.width > window.innerWidth) {
       left = window.innerWidth - popoverRect.width - 16;
     }
 
+    // Adjust if popover would go off the bottom edge - show above anchor
     if (top + popoverRect.height > window.innerHeight) {
       top = anchorRect.top - popoverRect.height - 8;
     }
 
+    // Ensure left doesn't go negative
+    left = Math.max(8, left);
+
+    // Set final position and make visible
     this.popover.style.cssText = `
       position: fixed;
       top: ${top}px;
-      left: ${Math.max(8, left)}px;
+      left: ${left}px;
       z-index: 2147483647;
       isolation: isolate;
     `;
