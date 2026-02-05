@@ -59,6 +59,7 @@ export class UnderlineRenderer {
   private positionUnderline(element: HTMLElement, rects: DOMRect[], category: IssueCategory, issue: TextIssue): void {
     const config = CATEGORY_CONFIG[category];
     const containerRect = this.container.getBoundingClientRect();
+    const thickness = config.thickness || 3;
 
     element.innerHTML = '';
 
@@ -67,7 +68,7 @@ export class UnderlineRenderer {
       segment.className = 'aurora-underline-segment';
 
       const left = rect.left - containerRect.left;
-      const top = rect.top - containerRect.top + rect.height - 3;
+      const top = rect.top - containerRect.top + rect.height - thickness;
 
       // Cap width to not extend beyond container
       const availableWidth = containerRect.width - left - 5;
@@ -84,7 +85,7 @@ export class UnderlineRenderer {
         left: ${Math.max(0, left)}px;
         top: ${top + 1}px;
         width: ${width}px;
-        height: 3px;
+        height: ${thickness}px;
         pointer-events: auto;
         cursor: pointer;
         ${underlineStyle}

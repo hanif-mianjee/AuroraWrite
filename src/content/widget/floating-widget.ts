@@ -305,18 +305,27 @@ export class FloatingWidget {
         height: 100%;
       }
       .aurora-refresh-icon {
-        width: 20px;
-        height: 20px;
+        width: 28px;
+        height: 28px;
         position: absolute;
-        top: 0;
-        left: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         opacity: 0;
-        transition: opacity 0.15s;
+        transition: opacity 0.15s, background 0.15s;
         color: #6366f1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        cursor: pointer;
       }
       .aurora-refresh-icon svg {
-        width: 100%;
-        height: 100%;
+        width: 18px;
+        height: 18px;
+      }
+      .aurora-refresh-icon:hover {
+        background: rgba(99, 102, 241, 0.1);
       }
       .aurora-clean:hover .aurora-clean-icon {
         opacity: 0;
