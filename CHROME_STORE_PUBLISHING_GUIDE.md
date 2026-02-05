@@ -18,8 +18,26 @@ This document contains all information required to publish AuroraWrite on the Ch
 
 ## Pre-Publishing Checklist
 
+### Asset Generation (New!)
+
+AuroraWrite includes a built-in screenshot generator tool to create all required Chrome Web Store assets:
+
+**Quick Commands:**
+```bash
+# Generate all icons (16px, 32px, 48px, 128px)
+brew install librsvg
+./generate-icons.sh
+
+# Open screenshot generator for screenshots and promotional tiles
+open screenshot-generator.html
+```
+
+See [Required Assets](#required-assets) section for detailed instructions.
+
+### Required Tasks
+
 - [ ] Register as Chrome Web Store Developer ($5 one-time fee)
-- [ ] Prepare all required images (icons, screenshots, promotional tiles)
+- [ ] Generate all required images using the screenshot generator tool
 - [ ] Create privacy policy page (hosted URL required)
 - [ ] Build production extension (`npm run build`)
 - [ ] Test extension thoroughly
@@ -471,6 +489,59 @@ All regions
 
 ## Required Assets
 
+### 🎨 Screenshot Generator Tool
+
+**AuroraWrite includes a purpose-built HTML tool to generate all required Chrome Web Store assets!**
+
+**File Location:** `screenshot-generator.html` (in project root)
+
+**What it generates:**
+- ✅ All 4 icon sizes (16px, 32px, 48px, 128px)
+- ✅ 5 professional screenshots (1280×800 px)
+- ✅ Small promotional tile (440×280 px)
+- ✅ Marquee promotional tile (1400×560 px)
+
+**How to use:**
+
+1. **Generate Icons (Command Line - Recommended):**
+   ```bash
+   # Install librsvg (best quality)
+   brew install librsvg
+   
+   # Run the automated script
+   ./generate-icons.sh
+   
+   # This creates: icon16.png, icon32.png, icon48.png, icon128.png
+   ```
+
+2. **Generate Screenshots and Promotional Tiles:**
+   ```bash
+   # Open the generator in your browser
+   open screenshot-generator.html
+   ```
+   
+   Then for each section:
+   - Navigate to the specific screenshot/tile section
+   - Use your browser's screenshot tool (or take a screenshot manually)
+   - Crop to the exact dimensions shown
+   - Save as JPEG (screenshots) or PNG/JPEG (promotional tiles)
+
+**Included Screenshots:**
+1. **Gmail with Suggestions** - Shows the extension analyzing text with popover
+2. **Settings Page** - Displays AI provider selection and configuration
+3. **Social Media Transform** - Demonstrates text transformation feature
+4. **Multiple Providers** - Showcases all 6 supported AI providers
+5. **Before/After Comparison** - Highlights text improvements
+
+**Features of the Generator:**
+- Uses actual extension UI components (not mockups!)
+- Consistent branding and design
+- Proper dimensions for all Chrome Web Store requirements
+- Browser mockups for realistic screenshots
+- Professional gradient backgrounds for promotional tiles
+
+---
+
 ### Extension Icon
 
 | Size | Dimensions | Format | Required |
@@ -486,11 +557,13 @@ All regions
 - PNG format with transparency
 - No rounded corners (Chrome adds them automatically)
 
-**Files to Prepare:**
-- `icon16.png` (16x16)
-- `icon32.png` (32x32)
-- `icon48.png` (48x48)
-- `icon128.png` (128x128)
+**✅ Generation Method:**
+Use the automated script (see Screenshot Generator Tool above):
+```bash
+./generate-icons.sh
+```
+
+This creates all 4 required icon sizes from `src/assets/icons/icon.svg`
 
 ---
 
@@ -505,20 +578,46 @@ All regions
 | **Corners** | Square (no rounded corners) |
 | **Padding** | None (full bleed) |
 
-**Recommended Screenshots for AuroraWrite:**
+**✅ Generation Method:**
+Open `screenshot-generator.html` in your browser and capture each screenshot section.
 
-1. **Main Feature** - Show the extension analyzing text in Gmail/Google Docs with suggestions overlay
-2. **Settings Page** - Display the options page with AI provider selection
-3. **In Action** - Show corrections being applied in a social media post
-4. **Multiple Providers** - Highlight the various AI providers supported
-5. **Before/After** - Show text improvement with AuroraWrite suggestions
+**5 Professional Screenshots Included:**
+
+1. **Screenshot 1: Gmail with Suggestions**
+   - Gmail compose window with real-time suggestions
+   - Shows suggestion popover with "Accept/Ignore" buttons
+   - Displays the Aurora widget in bottom-right corner
+   
+2. **Screenshot 2: Settings Page**
+   - Extension options page
+   - 6 AI provider cards (Groq, OpenAI, Gemini, Claude, Together, Mistral)
+   - API key input field
+   - Toggle switches for writing features
+
+3. **Screenshot 3: Social Media Transform**
+   - Twitter/X compose interface
+   - Transform popover with tabs (Improve, Rephrase, Shorten, etc.)
+   - Before/After diff view
+   - Expanded widget showing issue categories
+
+4. **Screenshot 4: Multiple Providers Showcase**
+   - Clean presentation of all 6 AI providers
+   - Provider cards with descriptions
+   - Gradient background
+   - Professional marketing layout
+
+5. **Screenshot 5: Before/After Comparison**
+   - Side-by-side text comparison
+   - Clearly marked errors in "Before" text
+   - Clean, corrected text in "After"
+   - Statistics showing improvements (7 errors fixed, 3 style improved)
 
 **Screenshot Guidelines:**
-- Demonstrate actual user experience
-- Focus on core features
-- Ensure clarity (no blurry/pixelated images)
-- Minimize text overlay
-- Consistent branding
+- ✅ All screenshots use actual extension UI (not mockups)
+- ✅ Dimensions are pre-set to 1280×800 px
+- ✅ Browser chrome mockup for realistic appearance
+- ✅ Consistent branding and color scheme
+- ✅ Professional, clean design
 
 ---
 
@@ -532,14 +631,24 @@ All regions
 | **Format** | PNG or JPEG |
 | **Purpose** | Displayed in store listings |
 
+**✅ Generation Method:**
+Open `screenshot-generator.html` and screenshot the "Small Promotional Tile" section.
+
+**Design Features:**
+- AuroraWrite icon with white circular background
+- Brand name in large, bold text
+- Tagline: "Your Personal AI Writing Assistant"
+- Blue-to-purple gradient background
+- Subtle decorative circular elements
+- Professional, modern design
+- Clean, minimalist aesthetic
+
 **Design Guidelines:**
-- Keep simple and uncluttered
-- Test at 50% size for legibility
-- Use saturated colors
-- Avoid excessive white/gray
-- No text required (logo is fine)
-- Consistent branding
-- Square corners, full bleed
+- ✅ Simple and uncluttered
+- ✅ Legible at 50% size
+- ✅ Saturated brand colors (blue-to-purple gradient)
+- ✅ Consistent branding with extension UI
+- ✅ Square corners, full bleed
 
 ---
 
@@ -550,6 +659,23 @@ All regions
 | **Dimensions** | 1400x560 px |
 | **Format** | PNG or JPEG |
 | **Purpose** | Featured placement in store |
+
+**✅ Generation Method:**
+Open `screenshot-generator.html` and screenshot the "Marquee Promotional Tile" section.
+
+**Design Features:**
+- Left side: Large AuroraWrite logo with icon, tagline, and feature list
+- Right side: Mockup of suggestion in action
+- Blue-to-purple gradient background
+- Subtle decorative circular elements
+- Professional shadows and depth
+- Two-column layout for 1400px width
+
+**Feature List Included:**
+- ✨ Real-time AI suggestions
+- 🤖 6+ AI providers supported
+- 🔒 100% privacy-first
+- ⚡ Works on any website
 
 **Note:** Your extension cannot be featured in the marquee section without this image.
 
@@ -572,13 +698,26 @@ All regions
 
 ## Summary Checklist
 
+### Using the Screenshot Generator Tool
+
+**Quick Start:**
+```bash
+# 1. Generate icons
+brew install librsvg
+./generate-icons.sh
+
+# 2. Generate screenshots and promotional tiles
+open screenshot-generator.html
+# Then capture each section as shown in the tool
+```
+
 ### Required for Publishing
 
 - [ ] **Developer Account** - Registered and fee paid ($5)
 - [ ] **Extension Package** - Zipped `dist/` folder (max 2GB)
-- [ ] **Extension Icon** - 128x128 PNG
-- [ ] **Screenshot** - At least 1 (1280x800 px)
-- [ ] **Small Promo Tile** - 440x280 px
+- [ ] **Extension Icon** - 128x128 PNG (✅ use `./generate-icons.sh`)
+- [ ] **Screenshot** - At least 1 (1280x800 px) (✅ use `screenshot-generator.html`)
+- [ ] **Small Promo Tile** - 440x280 px (✅ use `screenshot-generator.html`)
 - [ ] **Extension Name** - Max 75 characters
 - [ ] **Summary** - Max 132 characters
 - [ ] **Detailed Description** - Comprehensive feature list
@@ -593,8 +732,8 @@ All regions
 
 ### Recommended for Better Visibility
 
-- [ ] **Marquee Promo Tile** - 1400x560 px
-- [ ] **5 Screenshots** - Various features
+- [ ] **Marquee Promo Tile** - 1400x560 px (✅ use `screenshot-generator.html`)
+- [ ] **5 Screenshots** - Various features (✅ all included in `screenshot-generator.html`)
 - [ ] **YouTube Video** - Demo walkthrough
 - [ ] **Homepage URL** - Extension website
 - [ ] **Support URL** - Help/issues page
