@@ -81,9 +81,11 @@ export async function addIgnoredDomain(domain: string): Promise<void> {
 
 export async function removeIgnoredDomain(domain: string): Promise<void> {
   const settings = await getSettings();
+  const domainToRemove = domain.toLowerCase();
   const ignoredDomains = (settings.ignoredDomains || []).filter(
-    (d) => d !== domain.toLowerCase()
+    (d) => d.toLowerCase() !== domainToRemove
   );
+  console.log('[AuroraWrite Storage] Removing domain:', domainToRemove, 'Remaining:', ignoredDomains);
   await saveSettings({ ignoredDomains });
 }
 

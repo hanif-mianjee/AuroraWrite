@@ -22,10 +22,20 @@ class OptionsPage {
 
   async init(): Promise<void> {
     this.settings = await getSettings();
+    // Clean up any corrupted/empty domains on load
+    await this.cleanupIgnoredDomains();
     await this.loadProviders();
     this.activeProvider = this.settings?.providerSettings?.activeProvider || 'groq';
     this.populateForm();
     this.setupEventListeners();
+  }
+
+  private async cleanupIgnoredDomains(): Promise<void> {
+    // Only clean up truly invalid entries (null, undefined, empty string)
+    if (!this.settings) return;
+
+    const ignoredDomains = this.settings.ignoredDomains || [];
+    console.log('[AuroraWrite Options] Current ignored domains:', ignoredDomains);
   }
 
   private async loadProviders(): Promise<void> {
@@ -132,27 +142,31 @@ class OptionsPage {
       return;
     }
 
-    container.innerHTML = this.settings.ignoredWords
-      .map(
-        (word) => `
-        <span class="tag">
-          ${this.escapeHtml(word)}
-          <button class="tag-remove" data-word="${this.escapeHtml(word)}" title="Remove">×</button>
-        </span>
-      `
-      )
-      .join('');
+    // Clear container and build elements programmatically
+    container.innerHTML = '';
 
-    container.querySelectorAll('.tag-remove[data-word]').forEach((btn) => {
-      btn.addEventListener('click', async (e) => {
+    this.settings.ignoredWords.forEach((word) => {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'tag-text';
+      textSpan.textContent = word;
+      tag.appendChild(textSpan);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'tag-remove';
+      removeBtn.title = 'Remove';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const button = (e.currentTarget as HTMLElement);
-        const word = button.getAttribute('data-word');
-        if (word) {
-          await this.removeWord(word);
-        }
+        await this.removeWord(word);
       });
+      tag.appendChild(removeBtn);
+
+      container.appendChild(tag);
     });
   }
 
@@ -162,32 +176,42 @@ class OptionsPage {
 
     const ignoredDomains = this.settings.ignoredDomains || [];
 
+    console.log('[AuroraWrite Options] Rendering ignored domains:', JSON.stringify(ignoredDomains));
+
     if (ignoredDomains.length === 0) {
       container.innerHTML = '<span class="tags-empty">No ignored websites</span>';
       return;
     }
 
-    container.innerHTML = ignoredDomains
-      .map(
-        (domain) => `
-        <span class="tag tag-domain">
-          ${this.escapeHtml(domain)}
-          <button class="tag-remove" data-domain="${this.escapeHtml(domain)}" title="Remove">×</button>
-        </span>
-      `
-      )
-      .join('');
+    // Clear container and build elements programmatically for reliable event handling
+    container.innerHTML = '';
 
-    container.querySelectorAll('.tag-remove[data-domain]').forEach((btn) => {
-      btn.addEventListener('click', async (e) => {
+    ignoredDomains.forEach((domain, index) => {
+      const safeDomain = String(domain || '');
+      console.log('[AuroraWrite Options] Rendering domain:', safeDomain);
+
+      const tag = document.createElement('span');
+      tag.className = 'tag tag-domain';
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'tag-text';
+      textSpan.textContent = safeDomain;
+      tag.appendChild(textSpan);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'tag-remove';
+      removeBtn.title = 'Remove';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const button = (e.currentTarget as HTMLElement);
-        const domain = button.getAttribute('data-domain');
-        if (domain) {
-          await this.removeDomain(domain);
-        }
+        console.log('[AuroraWrite Options] Remove clicked for domain:', safeDomain);
+        await this.removeDomain(safeDomain);
       });
+      tag.appendChild(removeBtn);
+
+      container.appendChild(tag);
     });
   }
 
@@ -321,8 +345,10 @@ class OptionsPage {
   }
 
   private async removeDomain(domain: string): Promise<void> {
+    console.log('[AuroraWrite Options] Removing domain:', domain);
     await removeIgnoredDomain(domain);
     this.settings = await getSettings();
+    console.log('[AuroraWrite Options] Settings after removal:', this.settings.ignoredDomains);
     this.renderIgnoredDomains();
   }
 

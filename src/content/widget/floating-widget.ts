@@ -190,14 +190,11 @@ export class FloatingWidget {
       .aurora-logo {
         width: 22px;
         height: 22px;
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 12px;
-        color: white;
+        flex-shrink: 0;
+      }
+      .aurora-logo svg {
+        width: 100%;
+        height: 100%;
       }
       .aurora-title {
         font-weight: 600;
@@ -268,13 +265,13 @@ export class FloatingWidget {
       .aurora-loading {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 12px;
+        justify-content: center;
+        padding: 8px 12px;
         color: #6b7280;
       }
       .aurora-spinner {
-        width: 14px;
-        height: 14px;
+        width: 20px;
+        height: 20px;
         border: 2px solid #e5e7eb;
         border-top-color: #6366f1;
         border-radius: 50%;
@@ -286,8 +283,8 @@ export class FloatingWidget {
       .aurora-clean {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 10px 12px;
+        justify-content: center;
+        padding: 8px 12px;
         color: #059669;
         cursor: pointer;
         transition: background 0.15s;
@@ -297,13 +294,12 @@ export class FloatingWidget {
         background: #f9fafb;
       }
       .aurora-check {
-        font-size: 14px;
+        font-size: 18px;
         transition: opacity 0.15s;
       }
       .aurora-refresh {
-        font-size: 14px;
+        font-size: 18px;
         position: absolute;
-        left: 12px;
         opacity: 0;
         transition: opacity 0.15s;
         color: #6366f1;
@@ -391,14 +387,6 @@ export class FloatingWidget {
       return `
         <div class="aurora-loading">
           <div class="aurora-spinner"></div>
-          <div class="aurora-power-btn-container">
-            <button class="aurora-power-btn" data-action="toggle-domain" title="Disable for this website">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                <line x1="12" y1="2" x2="12" y2="12"/>
-              </svg>
-            </button>
-          </div>
         </div>
       `;
     }
@@ -417,14 +405,6 @@ export class FloatingWidget {
         <div class="aurora-clean" data-action="reanalyze" title="Click to re-analyze">
           <span class="aurora-check">✓</span>
           <span class="aurora-refresh">↻</span>
-          <div class="aurora-power-btn-container">
-            <button class="aurora-power-btn" data-action="toggle-domain" title="Disable for this website">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                <line x1="12" y1="2" x2="12" y2="12"/>
-              </svg>
-            </button>
-          </div>
         </div>
       `;
     }
@@ -449,7 +429,19 @@ export class FloatingWidget {
 
     return `
       <div class="aurora-widget-header">
-        <div class="aurora-logo">A</div>
+        <div class="aurora-logo">
+          <svg viewBox="0 0 128 128">
+            <defs>
+              <linearGradient id="auroraLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1976d2"/>
+                <stop offset="100%" style="stop-color:#7c4dff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="64" cy="64" r="60" fill="url(#auroraLogoGrad)"/>
+            <text x="64" y="82" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">A</text>
+            <path d="M30 100 Q64 85 98 100" stroke="#4caf50" stroke-width="6" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
         <span class="aurora-title">Aurora</span>
         <div class="aurora-header-right">
           <span class="aurora-total">${counts.total} issue${counts.total > 1 ? 's' : ''}</span>
