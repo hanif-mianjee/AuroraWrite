@@ -6,7 +6,7 @@ import { FloatingWidget } from './widget/floating-widget';
 import { SuggestionPopover } from './popover/suggestion-popover';
 import { SelectionHandler, SelectionTrigger, TransformPopover, type SelectionContext } from './selection';
 import { debounce } from '../shared/utils/debounce';
-import { addIgnoredWord } from '../shared/utils/storage';
+import { addIgnoredWord, addIgnoredDomain, isDomainIgnored } from '../shared/utils/storage';
 import { performanceLogger } from '../shared/utils/performance';
 import { blockAnalyzer, stabilityPassManager } from '../ai';
 import { inputTextStore } from '../state';
@@ -376,6 +376,58 @@ class AuroraWrite {
     this.widget.setOnReanalyze(() => {
       this.triggerReanalyze();
     });
+
+    this.widget.setOnToggleDomain(() => {
+      this.toggleCurrentDomain();
+    });
+  }
+
+  private async toggleCurrentDomain(): Promise<void> {
+    const domain = window.location.hostname;
+    await addIgnoredDomain(domain);
+    console.log(`[AuroraWrite] Domain ${domain} added to ignored list`);
+
+    // Destroy the extension for this page
+    this.destroy();
+
+    // Show a brief notification (using a simple alert-style notification)
+    this.showDomainDisabledNotification(domain);
+  }
+
+  private showDomainDisabledNotification(domain: string): void {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border-radius: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      z-index: 2147483647;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s, transform 0.3s;
+    `;
+    notification.textContent = `AuroraWrite disabled for ${domain}`;
+    document.body.appendChild(notification);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      notification.style.opacity = '1';
+      notification.style.transform = 'translateY(0)';
+    });
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateY(10px)';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
   }
 
   private triggerReanalyze(): void {
@@ -846,6 +898,19 @@ class AuroraWrite {
 }
 
 
-const aurora = new AuroraWrite();
-aurora.start();
+// Check if domain is ignored before starting
+async function initAuroraWrite(): Promise<void> {
+  const domain = window.location.hostname;
+  const isIgnored = await isDomainIgnored(domain);
+
+  if (isIgnored) {
+    console.log(`[AuroraWrite] Domain ${domain} is ignored, not starting`);
+    return;
+  }
+
+  const aurora = new AuroraWrite();
+  aurora.start();
+}
+
+initAuroraWrite();
 

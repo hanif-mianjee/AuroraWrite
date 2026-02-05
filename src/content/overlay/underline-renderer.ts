@@ -78,26 +78,46 @@ export class UnderlineRenderer {
         continue;
       }
 
+      const underlineStyle = this.getUnderlineStyle(config.underlineStyle, config.color);
       segment.style.cssText = `
         position: absolute;
         left: ${Math.max(0, left)}px;
-        top: ${top}px;
+        top: ${top + 1}px;
         width: ${width}px;
         height: 3px;
         pointer-events: auto;
         cursor: pointer;
-        background: ${config.color};
+        ${underlineStyle}
         border-radius: 1px;
         opacity: 0.65;
       `;
 
-      // Add direct click handler to segment
+      // Add click handler for immediate response
       segment.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         console.log('[AuroraWrite] Segment clicked for issue:', issue.id);
         if (this.onSegmentClick) {
           this.onSegmentClick(issue);
+        }
+      });
+
+      // Add hover handler with 300ms delay as alternative
+      let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+
+      segment.addEventListener('mouseenter', () => {
+        hoverTimeout = setTimeout(() => {
+          console.log('[AuroraWrite] Segment hover triggered for issue:', issue.id);
+          if (this.onSegmentClick) {
+            this.onSegmentClick(issue);
+          }
+        }, 300);
+      });
+
+      segment.addEventListener('mouseleave', () => {
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+          hoverTimeout = null;
         }
       });
 

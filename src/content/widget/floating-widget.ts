@@ -7,11 +7,14 @@ export class FloatingWidget {
   private widget: HTMLElement | null = null;
   private shadowRoot: ShadowRoot | null = null;
   private isExpanded = false;
+  private isHoverExpanded = false;
+  private hoverTimeout: ReturnType<typeof setTimeout> | null = null;
   private currentFieldElement: HTMLElement | null = null;
   private state: WidgetState = 'hidden';
   private onCategoryClick: ((category: IssueCategory) => void) | null = null;
   private onAcceptAllSpelling: (() => void) | null = null;
   private onReanalyze: (() => void) | null = null;
+  private onToggleDomain: (() => void) | null = null;
   private isInteracting = false;
 
   setOnCategoryClick(callback: (category: IssueCategory) => void): void {
@@ -24,6 +27,10 @@ export class FloatingWidget {
 
   setOnReanalyze(callback: () => void): void {
     this.onReanalyze = callback;
+  }
+
+  setOnToggleDomain(callback: () => void): void {
+    this.onToggleDomain = callback;
   }
 
   isUserInteracting(): boolean {
@@ -91,9 +98,24 @@ export class FloatingWidget {
     // Track mouse interactions to prevent blur from hiding widget
     this.widget.addEventListener('mouseenter', () => {
       this.isInteracting = true;
+      // Start hover expansion timer
+      if (this.hoverTimeout) {
+        clearTimeout(this.hoverTimeout);
+      }
+      this.hoverTimeout = setTimeout(() => {
+        this.isHoverExpanded = true;
+        content.classList.add('hover-expanded');
+      }, 300);
     });
     this.widget.addEventListener('mouseleave', () => {
       this.isInteracting = false;
+      // Clear hover expansion
+      if (this.hoverTimeout) {
+        clearTimeout(this.hoverTimeout);
+        this.hoverTimeout = null;
+      }
+      this.isHoverExpanded = false;
+      content.classList.remove('hover-expanded');
     });
     this.widget.addEventListener('mousedown', (e) => {
       e.preventDefault();
@@ -108,6 +130,9 @@ export class FloatingWidget {
     if (state === 'clean') {
       this.setupCleanStateEvents(content);
     }
+
+    // Set up power button event for all states
+    this.setupPowerButtonEvent(content);
   }
 
   private positionWidget(fieldElement: HTMLElement): void {
@@ -123,11 +148,12 @@ export class FloatingWidget {
     const left = rect.right + scrollX - padding;
 
     this.widget.style.cssText = `
-      position: absolute;
-      top: ${top}px;
-      left: ${left}px;
+      position: fixed;
+      top: ${top - scrollY}px;
+      left: ${left - scrollX}px;
       transform: translate(-100%, -100%);
       z-index: 2147483647;
+      isolation: isolate;
     `;
   }
 
@@ -323,20 +349,56 @@ export class FloatingWidget {
       .aurora-accept-all:hover {
         background: #c62828;
       }
+      .aurora-power-btn-container {
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        max-width: 0;
+        opacity: 0;
+        transition: max-width 0.2s ease, opacity 0.2s ease;
+      }
+      .aurora-widget.hover-expanded .aurora-power-btn-container {
+        max-width: 40px;
+        opacity: 1;
+      }
+      .aurora-power-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin-left: 8px;
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #9ca3af;
+        transition: background 0.15s, color 0.15s;
+      }
+      .aurora-power-btn:hover {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+      .aurora-power-btn svg {
+        width: 16px;
+        height: 16px;
+      }
     `;
   }
 
   private getWidgetHTML(state: WidgetState, counts?: IssueCounts, error?: string): string {
     if (state === 'loading') {
-      // return `
-      //   <div class="aurora-loading">
-      //     <div class="aurora-spinner"></div>
-      //     <span>Checking...</span>
-      //   </div>
-      // `;
       return `
         <div class="aurora-loading">
           <div class="aurora-spinner"></div>
+          <div class="aurora-power-btn-container">
+            <button class="aurora-power-btn" data-action="toggle-domain" title="Disable for this website">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       `;
     }
@@ -355,6 +417,14 @@ export class FloatingWidget {
         <div class="aurora-clean" data-action="reanalyze" title="Click to re-analyze">
           <span class="aurora-check">✓</span>
           <span class="aurora-refresh">↻</span>
+          <div class="aurora-power-btn-container">
+            <button class="aurora-power-btn" data-action="toggle-domain" title="Disable for this website">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       `;
     }
@@ -384,6 +454,14 @@ export class FloatingWidget {
         <div class="aurora-header-right">
           <span class="aurora-total">${counts.total} issue${counts.total > 1 ? 's' : ''}</span>
           <span class="aurora-expand-icon">▼</span>
+          <div class="aurora-power-btn-container">
+            <button class="aurora-power-btn" data-action="toggle-domain" title="Disable for this website">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
       <div class="aurora-categories">
@@ -429,9 +507,25 @@ export class FloatingWidget {
     const cleanDiv = content.querySelector('.aurora-clean[data-action="reanalyze"]');
     if (cleanDiv) {
       cleanDiv.addEventListener('click', (e) => {
+        // Don't trigger reanalyze if clicking on power button
+        if ((e.target as HTMLElement).closest('.aurora-power-btn')) {
+          return;
+        }
         e.stopPropagation();
         if (this.onReanalyze) {
           this.onReanalyze();
+        }
+      });
+    }
+  }
+
+  private setupPowerButtonEvent(content: HTMLElement): void {
+    const powerBtn = content.querySelector('.aurora-power-btn');
+    if (powerBtn) {
+      powerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onToggleDomain) {
+          this.onToggleDomain();
         }
       });
     }

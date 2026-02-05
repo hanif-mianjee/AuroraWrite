@@ -43,11 +43,8 @@ export class SuggestionPopover {
   private positionPopover(anchorRect: DOMRect): void {
     if (!this.popover) return;
 
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-
-    let top = anchorRect.bottom + scrollY + 8;
-    let left = anchorRect.left + scrollX;
+    let top = anchorRect.bottom + 8;
+    let left = anchorRect.left;
 
     const popoverRect = this.popover.getBoundingClientRect();
 
@@ -55,15 +52,16 @@ export class SuggestionPopover {
       left = window.innerWidth - popoverRect.width - 16;
     }
 
-    if (top + popoverRect.height > window.innerHeight + scrollY) {
-      top = anchorRect.top + scrollY - popoverRect.height - 8;
+    if (top + popoverRect.height > window.innerHeight) {
+      top = anchorRect.top - popoverRect.height - 8;
     }
 
     this.popover.style.cssText = `
-      position: absolute;
+      position: fixed;
       top: ${top}px;
       left: ${Math.max(8, left)}px;
       z-index: 2147483647;
+      isolation: isolate;
     `;
   }
 

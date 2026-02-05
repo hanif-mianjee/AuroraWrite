@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Tests - AuroraWrite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1976d2;
+      --primary-dark: #1565c0;
+      --accent-purple: #7c4dff;
+      --spelling: #e53935;
+      --grammar: #ff9800;
+      --style: #2196f3;
+      --clarity: #9c27b0;
+      --tone: #4caf50;
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --border: #e2e8f0;
+      --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .nav-logo {
+      width: 36px;
+      height: 36px;
+    }
+
+    .nav-title {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1976d2 0%, #7c4dff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-badge {
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Main Content */
+    .main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      font-size: 16px;
+      color: var(--text-secondary);
+    }
+
+    /* Test Sections */
+    .test-section {
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .test-section h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .test-section h2 .badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .test-section h2 .badge.spelling { background: rgba(229, 57, 53, 0.1); color: var(--spelling); }
+    .test-section h2 .badge.grammar { background: rgba(255, 152, 0, 0.1); color: var(--grammar); }
+    .test-section h2 .badge.style { background: rgba(33, 150, 243, 0.1); color: var(--style); }
+    .test-section h2 .badge.clarity { background: rgba(156, 39, 176, 0.1); color: var(--clarity); }
+    .test-section h2 .badge.tone { background: rgba(76, 175, 80, 0.1); color: var(--tone); }
+    .test-section h2 .badge.input { background: rgba(25, 118, 210, 0.1); color: var(--primary); }
+
+    .test-section p.description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    /* Text Fields */
+    textarea, input[type="text"], .contenteditable {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.6;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: var(--bg-secondary);
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    input[type="text"] {
+      height: 52px;
+    }
+
+    .contenteditable {
+      min-height: 150px;
+      outline: none;
+    }
+
+    textarea:focus, input[type="text"]:focus, .contenteditable:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.1);
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 20px;
+      background: var(--bg-primary);
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    /* Grid */
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+    }
+
+    /* Instructions */
+    .instructions {
+      background: linear-gradient(135deg, rgba(25, 118, 210, 0.05), rgba(124, 77, 255, 0.05));
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .instructions h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+
+    .instructions ol {
+      padding-left: 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .instructions li {
+      margin-bottom: 8px;
+    }
+
+    .instructions code {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      margin-top: 48px;
+    }
+
+    .footer p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .test-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page-header h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="nav-container">
+        <a href="index.html" class="nav-brand">
+          <svg viewBox="0 0 128 128" class="nav-logo">
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1976d2"/>
+                <stop offset="100%" style="stop-color:#7c4dff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="64" cy="64" r="60" fill="url(#logoGrad)"/>
+            <text x="64" y="82" font-family="Plus Jakarta Sans, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">A</text>
+            <path d="M30 100 Q64 85 98 100" stroke="#4caf50" stroke-width="6" fill="none" stroke-linecap="round"/>
+          </svg>
+          <span class="nav-title">AuroraWrite</span>
+        </a>
+        <span class="nav-badge">Developer Tests</span>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header class="page-header">
+        <h1>Developer Test Page</h1>
+        <p>Use this page to test AuroraWrite functionality locally. Each section contains text fields with sample errors.</p>
+      </header>
+
+      <!-- Instructions -->
+      <div class="instructions">
+        <h3>Getting Started</h3>
+        <ol>
+          <li>Build the extension: <code>npm run dev</code> or <code>npm run build</code></li>
+          <li>Load the <code>dist/</code> folder as an unpacked extension in Chrome</li>
+          <li>Configure your API key in the extension options</li>
+          <li>Click on any text field below to start testing</li>
+          <li>Type or edit text to trigger analysis (700ms debounce)</li>
+          <li>Hover over underlined issues to see suggestions (300ms delay)</li>
+        </ol>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--spelling)"></div>
+          <span>Spelling (squiggly)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--grammar)"></div>
+          <span>Grammar (dashed)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--style)"></div>
+          <span>Style (dotted)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--clarity)"></div>
+          <span>Clarity (wavy)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--tone)"></div>
+          <span>Tone (double)</span>
+        </div>
+      </div>
+
+      <!-- Test Sections -->
+      <div class="test-grid">
+        <!-- Spelling Tests -->
+        <section class="test-section">
+          <h2>
+            Spelling Errors
+            <span class="badge spelling">Textarea</span>
+          </h2>
+          <p class="description">Contains intentional spelling mistakes for testing.</p>
+          <textarea>I recieved your mesage yesterday. The accomodation was excelent and the resturant had delicous food. I definately recomend visiting this beautful city. Tommorow I will send you more informaton about the confrence.</textarea>
+        </section>
+
+        <!-- Grammar Tests -->
+        <section class="test-section">
+          <h2>
+            Grammar Issues
+            <span class="badge grammar">Textarea</span>
+          </h2>
+          <p class="description">Contains grammatical errors like subject-verb agreement and tense issues.</p>
+          <textarea>The team have completed their work. Each of the students are responsible for they own project. Me and him went to the store. The data shows that sales is increasing. She don't know what to do. Between you and I, this is confidential.</textarea>
+        </section>
+
+        <!-- Style Tests -->
+        <section class="test-section">
+          <h2>
+            Style Suggestions
+            <span class="badge style">Textarea</span>
+          </h2>
+          <p class="description">Contains wordy phrases, passive voice, and repetitive text.</p>
+          <textarea>At this point in time, we are currently in the process of reviewing the documentation. The report was written by the team. In order to accomplish our goals, we need to utilize all available resources. Due to the fact that there are issues, we should take action at the present time.</textarea>
+        </section>
+
+        <!-- Clarity Tests -->
+        <section class="test-section">
+          <h2>
+            Clarity Issues
+            <span class="badge clarity">Textarea</span>
+          </h2>
+          <p class="description">Contains ambiguous and unclear sentences.</p>
+          <textarea>The manager told the employee that he needed to improve his performance. After the meeting with the client, they decided to change things. The system does stuff with the data. It was implemented to make things better. We need to do something about the situation soon.</textarea>
+        </section>
+
+        <!-- ContentEditable Tests -->
+        <section class="test-section">
+          <h2>
+            ContentEditable Field
+            <span class="badge input">Rich Text</span>
+          </h2>
+          <p class="description">Test with a contenteditable div (used by many web apps).</p>
+          <div class="contenteditable" contenteditable="true">This is a contenteditable feild for testing purpases. The extention should work hear too. You can add formating and test how it handels diffrent scenarios. Try typing some mispeled words and grammer issues to see if they get detected properly.</div>
+        </section>
+
+        <!-- Input Field Tests -->
+        <section class="test-section">
+          <h2>
+            Single Line Input
+            <span class="badge input">Input</span>
+          </h2>
+          <p class="description">Test with a standard text input field.</p>
+          <input type="text" value="This is a sinlge line input with some speling erors and grammer issue for testing purpases.">
+        </section>
+
+        <!-- Mixed Errors Test -->
+        <section class="test-section">
+          <h2>
+            Mixed Errors
+            <span class="badge spelling">All Categories</span>
+          </h2>
+          <p class="description">Contains a mix of all error types for comprehensive testing.</p>
+          <textarea>Dear Team,
+
+I wanted to give you an update on our progres. We have recieved the new requirments from the client. The documantation was writen by John and me reviewed it.
+
+At this point in time, we are currently in the process of analysing the data. The system is doing things with the information. Due to the fact that the deadline is aproaching, we need to work faster.
+
+Each team member are responsable for their tasks. Between you and I, we need to improve our comunicaton. The manager told the developer that he should fix his code.
+
+Basicly, we need to finalize everthing by next week.
+
+Best Regards</textarea>
+        </section>
+
+        <!-- Long Text Test -->
+        <section class="test-section">
+          <h2>
+            Long Text Block
+            <span class="badge style">Performance Test</span>
+          </h2>
+          <p class="description">Test block-based analysis with longer content.</p>
+          <textarea>Lorem ipsum dolor sit amet, consectetur adipiscing elit. The quick brown fox jumps over the laxy dog. This sentance has multiple speling erors.
+
+In the world of software developement, attention to detial is crucial. Many develoeprs forget to test there code properly. The importanse of quality assurance cannot be understated.
+
+When writting documentation, clarity is key. The document should be writen in a way that anyone can understand. At this point in time, we are currently in the process of improving our processes.
+
+Communication between team members are essential for project sucess. Each developer are responsible for their own tasks. The code was reviewed by the senior developer.
+
+Moving forward, we need to establish better proccedures. The implementation of new features should be carefully planed. All requirements must be clearly definned before starting development.
+
+In conclusion, software quality is important. We should always strive to write cleaner code. Testing is a critical part of the development lifecycle.</textarea>
+        </section>
+      </div>
+
+      <!-- Transform Test -->
+      <section class="test-section">
+        <h2>
+          Text Transform Test
+          <span class="badge input">Selection</span>
+        </h2>
+        <p class="description">Select any text in this field to test the transform feature (rephrase, shorten, formal, casual, translate).</p>
+        <textarea>The implementation of the new feature was completed by the development team last week. It took a really long time because there were many complex technical challenges that needed to be addressed. We are super excited about the results and think it will be awesome for our users. Moving forward, we will continue to iterate and make improvements based on feedback.</textarea>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>
+        AuroraWrite Test Page |
+        <a href="index.html">Home</a> |
+        <a href="https://github.com/hanif-mianjee/AuroraWrite" target="_blank">GitHub</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

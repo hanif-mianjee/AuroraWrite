@@ -21,6 +21,7 @@ export interface Settings {
   model: string;
   categories: Record<IssueCategory, CategorySettings>;
   ignoredWords: string[];
+  ignoredDomains: string[];
   enabledSites: 'all' | 'whitelist';
   siteList: string[];
   providerSettings?: ProviderSettings;
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS: Settings = {
     rephrase: { enabled: true, sensitivity: 'medium' },
   },
   ignoredWords: [],
+  ignoredDomains: [],
   enabledSites: 'all',
   siteList: [],
   providerSettings: {

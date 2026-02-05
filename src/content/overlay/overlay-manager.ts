@@ -99,13 +99,14 @@ export class OverlayManager {
     const scrollY = window.scrollY;
 
     container.style.cssText = `
-      position: absolute;
-      top: ${rect.top + scrollY}px;
-      left: ${rect.left + scrollX}px;
+      position: fixed;
+      top: ${rect.top}px;
+      left: ${rect.left}px;
       width: ${rect.width}px;
       height: ${rect.height}px;
       pointer-events: none;
-      z-index: 2147483647;
+      z-index: 2147483646;
+      isolation: isolate;
     `;
   }
 

@@ -242,6 +242,11 @@ body {
   color: var(--spelling);
 }
 
+.domains-icon {
+  background: rgba(124, 77, 255, 0.1);
+  color: var(--accent-purple);
+}
+
 .card-header h2 {
   font-size: 20px;
   font-weight: 600;
@@ -645,6 +650,20 @@ body {
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
+}
+
+.tag.tag-domain {
+  background: rgba(124, 77, 255, 0.15);
+  color: #5e35b1;
+}
+
+.tag.tag-domain .tag-remove {
+  color: #5e35b1;
+}
+
+.tag.tag-domain .tag-remove:hover {
+  background: var(--accent-purple);
+  color: white;
 }
 
 .tag-remove {

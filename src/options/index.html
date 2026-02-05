@@ -263,6 +263,40 @@
           </div>
         </section>
 
+        <!-- Ignored Domains Section -->
+        <section class="card">
+          <div class="card-header">
+            <div class="card-icon domains-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Ignored Websites</h2>
+              <p>AuroraWrite won't run on these websites. You can also disable from the widget using the power button.</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="input-with-button">
+              <input type="text" id="new-domain" placeholder="Add a domain (e.g., example.com)" class="input">
+              <button type="button" id="add-domain" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div id="ignored-domains-list" class="tags-container">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
         <!-- Save Button -->
         <div class="save-section">
           <button type="button" id="save-settings" class="btn btn-primary btn-lg">
