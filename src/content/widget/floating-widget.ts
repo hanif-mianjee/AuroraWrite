@@ -265,8 +265,7 @@ export class FloatingWidget {
       .aurora-loading {
         display: flex;
         align-items: center;
-        justify-content: center;
-        padding: 8px 12px;
+        padding: 8px 10px;
         color: #6b7280;
       }
       .aurora-spinner {
@@ -283,15 +282,18 @@ export class FloatingWidget {
       .aurora-clean {
         display: flex;
         align-items: center;
-        justify-content: center;
-        padding: 8px;
+        padding: 8px 10px;
         color: #059669;
         cursor: pointer;
         transition: background 0.15s;
-        position: relative;
       }
       .aurora-clean:hover {
         background: #f9fafb;
+      }
+      .aurora-clean-wrapper {
+        position: relative;
+        width: 20px;
+        height: 20px;
       }
       .aurora-clean-icon {
         width: 20px;
@@ -306,6 +308,8 @@ export class FloatingWidget {
         width: 20px;
         height: 20px;
         position: absolute;
+        top: 0;
+        left: 0;
         opacity: 0;
         transition: opacity 0.15s;
         color: #6366f1;
@@ -397,6 +401,14 @@ export class FloatingWidget {
       return `
         <div class="aurora-loading">
           <div class="aurora-spinner"></div>
+          <div class="aurora-power-btn-container">
+            <button class="aurora-power-btn" data-action="toggle-domain" title="Disable for this website">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       `;
     }
@@ -413,18 +425,28 @@ export class FloatingWidget {
     if (state === 'clean') {
       return `
         <div class="aurora-clean" data-action="reanalyze" title="Click to re-analyze">
-          <span class="aurora-clean-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-          </span>
-          <span class="aurora-refresh-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-              <path d="M21 3v5h-5"/>
-            </svg>
-          </span>
+          <div class="aurora-clean-wrapper">
+            <span class="aurora-clean-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </span>
+            <span class="aurora-refresh-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+              </svg>
+            </span>
+          </div>
+          <div class="aurora-power-btn-container">
+            <button class="aurora-power-btn" data-action="toggle-domain" title="Disable for this website">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
       `;
     }
