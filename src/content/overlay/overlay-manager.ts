@@ -46,8 +46,11 @@ export class OverlayManager {
         position: absolute;
         pointer-events: none;
       }
-      .aurora-underline-segment {
+      .aurora-underline-hitarea {
         pointer-events: auto;
+      }
+      .aurora-underline-segment {
+        pointer-events: none;
       }
     `;
     shadowRoot.appendChild(style);
