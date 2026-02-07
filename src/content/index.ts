@@ -750,8 +750,6 @@ class AuroraWrite {
       const handler = this.handlers.get(fieldId);
       if (handler) {
         const newText = handler.getText();
-        // Re-add the issue we removed, then apply the change properly
-        // Actually, we already removed it, so just update the text/offsets
         const state = inputTextStore.getState(fieldId);
         if (state) {
           // Update block text and offsets for the change
@@ -763,7 +761,15 @@ class AuroraWrite {
               const newBlockText = newText.slice(block.startOffset, newBlockEnd);
               block.text = newBlockText;
               block.endOffset = newBlockEnd;
-              block.hash = hashBlock(newBlockText); // Use proper hash function
+              block.hash = hashBlock(newBlockText);
+
+              // FIX: Adjust remaining issues in THIS block that come after the applied fix
+              for (const blockIssue of block.issues) {
+                if (blockIssue.startOffset > issue.startOffset) {
+                  blockIssue.startOffset += delta;
+                  blockIssue.endOffset += delta;
+                }
+              }
             } else if (block.startOffset > issue.startOffset) {
               // Adjust subsequent block offsets
               block.startOffset += delta;
@@ -775,6 +781,17 @@ class AuroraWrite {
             }
           }
           state.text = newText;
+
+          // FIX: Sync adjusted issues to overlay manager so underlines render correctly
+          const adjustedIssues = inputTextStore.getAllIssues(fieldId);
+          this.overlayManager.updateAnalysis(fieldId, {
+            text: newText,
+            issues: adjustedIssues,
+            timestamp: Date.now(),
+          });
+
+          // Update widget with adjusted issues
+          this.widget.update(adjustedIssues);
         }
       }
       // Schedule stability pass for when user is idle
