@@ -38,21 +38,17 @@ export class FloatingWidget {
   }
 
   show(fieldElement: HTMLElement, issues: TextIssue[]): void {
-    console.log('[AuroraWrite] Widget.show called, issues:', issues.length);
     this.currentFieldElement = fieldElement;
     const counts = this.calculateCounts(issues);
 
     if (counts.total === 0) {
-      console.log('[AuroraWrite] Showing clean state');
       this.showClean(fieldElement);
     } else {
-      console.log('[AuroraWrite] Showing issues state:', counts);
       this.showIssues(fieldElement, counts);
     }
   }
 
   showLoading(fieldElement: HTMLElement): void {
-    console.log('[AuroraWrite] Widget.showLoading called');
     this.currentFieldElement = fieldElement;
     this.state = 'loading';
     this.hide();

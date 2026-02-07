@@ -74,7 +74,6 @@ export async function addIgnoredDomain(domain: string): Promise<void> {
   // Validate domain - don't add empty or invalid domains
   const cleanDomain = (domain || '').trim().toLowerCase();
   if (!cleanDomain || cleanDomain === 'localhost' && cleanDomain.length < 3) {
-    console.log('[AuroraWrite Storage] Skipping invalid domain:', domain);
     return;
   }
 
@@ -92,7 +91,6 @@ export async function removeIgnoredDomain(domain: string): Promise<void> {
   const ignoredDomains = (settings.ignoredDomains || []).filter(
     (d) => d.toLowerCase() !== domainToRemove
   );
-  console.log('[AuroraWrite Storage] Removing domain:', domainToRemove, 'Remaining:', ignoredDomains);
   await saveSettings({ ignoredDomains });
 }
 

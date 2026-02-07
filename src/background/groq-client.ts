@@ -225,14 +225,11 @@ export class GroqClient {
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
-    console.log('[AuroraWrite] Raw Groq response:', content);
-
     if (!content) {
       throw new Error('Empty response from Groq API');
     }
 
     const parsed = this.parseResponse(content, text);
-    console.log('[AuroraWrite] Parsed issues before filtering:', parsed.length);
     const result: AnalysisResult = {
       text,
       issues: parsed,
@@ -252,11 +249,7 @@ export class GroqClient {
       return [];
     }
 
-    console.log('[AuroraWrite] Parsed JSON, issues array:', parsed.issues);
-    console.log('[AuroraWrite] Original text for matching:', originalText);
-
     if (!parsed.issues || !Array.isArray(parsed.issues)) {
-      console.log('[AuroraWrite] No issues array in response');
       return [];
     }
 
@@ -271,7 +264,6 @@ export class GroqClient {
       const normalizedOriginal = issue.originalText.trim().toLowerCase();
       const normalizedSuggested = issue.suggestedText.trim().toLowerCase();
       if (normalizedOriginal === normalizedSuggested) {
-        console.log('[AuroraWrite] Skipping false positive - same text:', issue.originalText);
         continue;
       }
 

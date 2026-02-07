@@ -34,14 +34,11 @@ class OptionsPage {
     if (!this.settings) return;
 
     const ignoredDomains = this.settings.ignoredDomains || [];
-    console.log('[AuroraWrite Options] Current ignored domains:', ignoredDomains);
-
     // Filter out empty/invalid domains
     const validDomains = ignoredDomains.filter(d => d && typeof d === 'string' && d.trim().length > 0);
 
     // If there were invalid entries, clean them up
     if (validDomains.length !== ignoredDomains.length) {
-      console.log('[AuroraWrite Options] Cleaning up invalid domains. Removed:', ignoredDomains.length - validDomains.length);
       await saveSettings({ ignoredDomains: validDomains });
       this.settings = await getSettings();
     }
@@ -190,8 +187,6 @@ class OptionsPage {
 
     const ignoredDomains = this.settings.ignoredDomains || [];
 
-    console.log('[AuroraWrite Options] Rendering ignored domains:', JSON.stringify(ignoredDomains));
-
     if (ignoredDomains.length === 0) {
       container.innerHTML = '<span class="tags-empty">No ignored websites</span>';
       return;
@@ -202,7 +197,6 @@ class OptionsPage {
 
     ignoredDomains.forEach((domain, index) => {
       const safeDomain = String(domain || '');
-      console.log('[AuroraWrite Options] Rendering domain:', safeDomain);
 
       const tag = document.createElement('span');
       tag.className = 'tag tag-domain';
@@ -220,7 +214,6 @@ class OptionsPage {
       removeBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('[AuroraWrite Options] Remove clicked for domain:', safeDomain);
         await this.removeDomain(safeDomain);
       });
       tag.appendChild(removeBtn);
@@ -361,10 +354,8 @@ class OptionsPage {
   }
 
   private async removeDomain(domain: string): Promise<void> {
-    console.log('[AuroraWrite Options] Removing domain:', domain);
     await removeIgnoredDomain(domain);
     this.settings = await getSettings();
-    console.log('[AuroraWrite Options] Settings after removal:', this.settings.ignoredDomains);
     this.renderIgnoredDomains();
   }
 

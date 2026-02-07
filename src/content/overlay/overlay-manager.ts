@@ -77,7 +77,6 @@ export class OverlayManager {
 
     // Set up click handler for underline segments
     renderer.setOnSegmentClick((issue) => {
-      console.log('[AuroraWrite] Renderer segment click callback, issue:', issue.id);
       if (this.onIssueClick) {
         this.onIssueClick(issue, field.id);
       }
@@ -127,9 +126,7 @@ export class OverlayManager {
     const overlayContent = overlay.shadowRoot.querySelector('.aurora-overlay-content');
     if (overlayContent) {
       overlayContent.addEventListener('click', (e) => {
-        console.log('[AuroraWrite] Overlay clicked at', (e as MouseEvent).clientX, (e as MouseEvent).clientY);
         const issue = overlay.renderer.getUnderlineAt((e as MouseEvent).clientX, (e as MouseEvent).clientY);
-        console.log('[AuroraWrite] Issue at click:', issue);
         if (issue && this.onIssueClick) {
           e.preventDefault();
           e.stopPropagation();
@@ -143,18 +140,14 @@ export class OverlayManager {
     const overlay = this.overlays.get(fieldId);
     if (!overlay) return;
 
-    console.log(`[AuroraWrite:Overlay] updateAnalysis called with ${result.issues.length} issues`);
     overlay.issues = result.issues;
     this.updateUnderlines(overlay);
   }
 
   private updateUnderlines(overlay: FieldOverlay): void {
     const text = overlay.handler.getText();
-    console.log(`[AuroraWrite:Overlay] updateUnderlines - text length: ${text.length}, issues: ${overlay.issues.length}`);
 
     overlay.renderer.render(overlay.issues, (issue) => {
-      console.log(`[AuroraWrite:Overlay] getRects called for "${issue.originalText}" at ${issue.startOffset}-${issue.endOffset}`);
-      console.log(`[AuroraWrite:Overlay] Text at offset: "${text.substring(issue.startOffset, issue.endOffset)}"`);
       const positions = overlay.handler.getTextPositions(text, issue.startOffset, issue.endOffset);
       return positions.rects;
     });
@@ -186,21 +179,13 @@ export class OverlayManager {
   }
 
   ignoreIssue(fieldId: string, issueId: string): void {
-    console.log('[AuroraWrite] OverlayManager.ignoreIssue:', fieldId, issueId);
     const overlay = this.overlays.get(fieldId);
-    if (!overlay) {
-      console.log('[AuroraWrite] Overlay not found for field:', fieldId);
-      return;
-    }
+    if (!overlay) return;
 
-    console.log('[AuroraWrite] Issues in overlay:', overlay.issues.map(i => i.id));
     const issue = overlay.issues.find((i) => i.id === issueId);
     if (issue) {
-      console.log('[AuroraWrite] Found issue, setting ignored=true');
       issue.ignored = true;
       this.updateUnderlines(overlay);
-    } else {
-      console.log('[AuroraWrite] Issue not found with id:', issueId);
     }
   }
 

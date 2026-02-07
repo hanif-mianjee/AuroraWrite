@@ -5,7 +5,7 @@ import type { LLMProviderType } from '../shared/types/llm';
 import type { TextIssue } from '../shared/types/analysis';
 import type { Settings } from '../shared/types/settings';
 
-console.log('[AuroraWrite] Background service worker starting');
+// Background service worker initialized
 
 // Open welcome page on install/update
 chrome.runtime.onInstalled.addListener((details) => {
@@ -68,10 +68,7 @@ async function executeWithFallback<T>(
       for (const fallbackType of fallbacks) {
         const fallbackKey = settings.providerSettings!.providers![fallbackType]!.apiKey;
         try {
-          console.log(`[AuroraWrite] Trying fallback provider: ${fallbackType}`);
           const result = await operation(fallbackType, fallbackKey);
-          // Persist the new active provider (fire-and-forget)
-          console.log(`[AuroraWrite] Fallback to ${fallbackType} succeeded, persisting as active provider`);
           saveSettings({
             providerSettings: { ...settings.providerSettings!, activeProvider: fallbackType },
           }).catch(() => {});
@@ -94,7 +91,7 @@ async function executeWithFallback<T>(
       for (const fallbackType of fallbacks) {
         const fallbackKey = settings.providerSettings!.providers![fallbackType]!.apiKey;
         try {
-          console.log(`[AuroraWrite] Active provider has no key, trying fallback: ${fallbackType}`);
+          // Active provider has no key, trying fallback
           const result = await operation(fallbackType, fallbackKey);
           saveSettings({
             providerSettings: { ...settings.providerSettings!, activeProvider: fallbackType },
@@ -115,10 +112,8 @@ async function executeWithFallback<T>(
 }
 
 chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
-  console.log('[AuroraWrite] Received message:', message.type);
   handleMessage(message, sender)
     .then((response) => {
-      console.log('[AuroraWrite] Sending response:', response);
       sendResponse(response);
     })
     .catch((error) => {
@@ -133,17 +128,14 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
   switch (message.type) {
     case 'ANALYZE_TEXT': {
       const { text, fieldId } = message.payload;
-      console.log('[AuroraWrite] ANALYZE_TEXT for field:', fieldId, 'text length:', text.length);
 
       const settings = await getSettings();
 
       try {
         const result = await executeWithFallback(settings, (providerType, apiKey) => {
           const provider = LLMFactory.getProvider(providerType);
-          console.log('[AuroraWrite] Calling', provider.config.name, 'API...');
           return provider.analyzeText(text, apiKey, settings);
         });
-        console.log('[AuroraWrite] Analysis complete, issues found:', result.issues.length);
         const response: AnalysisResultMessage = {
           type: 'ANALYSIS_RESULT',
           payload: { fieldId, result },
@@ -167,7 +159,6 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
 
     case 'ANALYZE_BLOCK': {
       const { fieldId, blockId, blockText, previousBlockText, nextBlockText, blockStartOffset, requestId } = message.payload;
-      console.log('[AuroraWrite] ANALYZE_BLOCK for field:', fieldId, 'block:', blockId, 'text length:', blockText.length);
 
       const settings = await getSettings();
 
@@ -197,8 +188,6 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
             endOffset: issue.endOffset - contextPrefixLength + blockStartOffset,
           }));
 
-        console.log('[AuroraWrite] Block analysis complete, issues found:', blockIssues.length);
-
         const response: BlockResultMessage = {
           type: 'BLOCK_RESULT',
           payload: { fieldId, blockId, issues: blockIssues, requestId },
@@ -222,7 +211,7 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
 
     case 'VERIFY_BLOCK': {
       const { fieldId, blockId, blockText, previousBlockText, nextBlockText, blockStartOffset, requestId } = message.payload;
-      console.log('[AuroraWrite:Stability] VERIFY_BLOCK for field:', fieldId, 'block:', blockId);
+      // Verify block for stability pass
 
       const settings = await getSettings();
 
@@ -249,8 +238,6 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
             startOffset: issue.startOffset - contextPrefixLength + blockStartOffset,
             endOffset: issue.endOffset - contextPrefixLength + blockStartOffset,
           }));
-
-        console.log('[AuroraWrite:Stability] Verification complete, new issues found:', blockIssues.length);
 
         const response: VerifyResultMessage = {
           type: 'VERIFY_RESULT',
@@ -294,7 +281,7 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
 
     case 'TRANSFORM_TEXT': {
       const { text, transformationType, customPrompt, requestId } = message.payload;
-      console.log('[AuroraWrite] TRANSFORM_TEXT request:', requestId, transformationType);
+      // Transform text request
 
       const settings = await getSettings();
 
@@ -303,7 +290,6 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
           const provider = LLMFactory.getProvider(providerType);
           return provider.transformText(text, transformationType, apiKey, settings, customPrompt);
         });
-        console.log('[AuroraWrite] Transform complete');
         const response: TransformResultMessage = {
           type: 'TRANSFORM_RESULT',
           payload: { requestId, originalText: text, transformedText },
@@ -326,7 +312,6 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
     }
 
     case 'CLEAR_CACHE': {
-      console.log('[AuroraWrite] Clearing provider cache');
       const settings = await getSettings();
       const provider = getActiveProvider(settings);
       provider.clearCache();
@@ -339,5 +324,5 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('AuroraWrite extension installed');
+  // Extension installed/updated
 });

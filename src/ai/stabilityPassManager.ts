@@ -98,34 +98,18 @@ export class StabilityPassManager {
     callbacks: StabilityPassCallbacks
   ): void {
     // Check if all blocks are clean (analyzed, not analyzing)
-    if (!inputTextStore.areAllBlocksClean(fieldId)) {
-      console.log('[AuroraWrite:Stability] Skipping - not all blocks clean');
-      return;
-    }
+    if (!inputTextStore.areAllBlocksClean(fieldId)) return;
 
     // STABILITY GUARD: Don't run if there are unapplied issues visible to user
-    if (inputTextStore.hasAnyUnappliedIssues(fieldId)) {
-      console.log('[AuroraWrite:Stability] Skipping - has unapplied issues');
-      return;
-    }
+    if (inputTextStore.hasAnyUnappliedIssues(fieldId)) return;
 
     // Check if all blocks are already stable
-    if (inputTextStore.areAllBlocksStable(fieldId)) {
-      console.log('[AuroraWrite:Stability] Skipping - all blocks stable');
-      return;
-    }
+    if (inputTextStore.areAllBlocksStable(fieldId)) return;
 
     // Get unstable blocks that need verification (already filtered by hasUnappliedIssues)
     const unstableBlocks = inputTextStore.getUnstableBlocks(fieldId);
 
-    if (unstableBlocks.length === 0) {
-      console.log('[AuroraWrite:Stability] Skipping - no unstable blocks eligible');
-      return;
-    }
-
-    console.log(
-      `[AuroraWrite:Stability] Starting stability pass for ${unstableBlocks.length} blocks`
-    );
+    if (unstableBlocks.length === 0) return;
 
     // Track pending blocks
     const pendingBlockIds = new Set(unstableBlocks.map((b) => b.id));
@@ -199,7 +183,6 @@ export class StabilityPassManager {
     if (requestId && pending.blockRequestIds.has(blockId)) {
       const expectedId = pending.blockRequestIds.get(blockId);
       if (expectedId !== requestId) {
-        console.log(`[AuroraWrite:Stability] Discarding stale verification for ${blockId}`);
         return;
       }
     }
@@ -207,7 +190,6 @@ export class StabilityPassManager {
     // Update store with results (as stability pass)
     const accepted = inputTextStore.mergeBlockResult(fieldId, blockId, issues, true, requestId);
     if (!accepted) {
-      console.log(`[AuroraWrite:Stability] Verification result rejected for ${blockId}`);
       return;
     }
 
@@ -267,8 +249,6 @@ export class StabilityPassManager {
     }
 
     this.pendingPasses.delete(fieldId);
-
-    console.log(`[AuroraWrite:Stability] Stability pass complete for ${fieldId}`);
   }
 
   /**
