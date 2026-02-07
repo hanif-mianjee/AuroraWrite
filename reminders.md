@@ -27,7 +27,7 @@ This is an LLM response quality issue, not a code bug. The prompt tells the AI t
 **Potential improvement:** The prompt could be enhanced to better detect repeated/duplicate word issues and provide the correct minimal fix. Would you like me to adjust the system prompt to better handle these cases?
 
 ---
-Fix offset issue:
+√ Fix offset issue:
 In this AI writing assistant chrome extension, I face a bug. Below is the detail, please analyze the code, find why is the issue. Similar functionality is in many places like applying suggested corrections or improvements, applying to multiple places, replacing text, replacing phrases.
 
 Bug:
@@ -35,11 +35,15 @@ When I apply the suggestions one by one the first suggestion applied correctly o
 
 ---
 
-Wrong category bug:
+√ Wrong category bug:
 
 For the following text, "I recieved your mesage yesterday. The accomodation was excelent and the resturant had delicous food. I definately recomend visiting this beautful city. Tommorow I will send you more informaton about the confrence.", why all the suggestions category either it is "Grammar" or "Tone", the expected category is "Spelling". This issue is happening for all the texts that I give for analysis. It always picks the wrong categories.
 
 Can you please analyze the suggestion system, the prompts, the category selection system, and check what is the issue, how can we fix it or improve it, without changing the the current functionality. Please note, changing the prompt can cause entire system to malfunction, increase the API token cost. Please be mindfull, analyze in detail, then apply the fix. Please think hard, spend time to reason. Please make the system 100% perfect.
+
+---
+
+Please check the code for underline system. For the firsts time, the underlines are placed correctly, but when I applied the suggestion, the offset is updated for the next suggesions, but the underlines remains on the same possitions. This also happening when a suggestion is applied, system reanalyzed the text, the old suggestions remains on the same possition, some time outside the suggestion words. Can you please analyze the issue/bug and fix it for all the categories. Please sure you do not break the existing functionality
 
 ---
 
