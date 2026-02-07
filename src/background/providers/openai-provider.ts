@@ -13,9 +13,10 @@ export class OpenAIProvider extends BaseProvider {
     defaultModel: 'gpt-4o-mini',
     models: [
       { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast, Cheap)' },
-      { id: 'gpt-4o', name: 'GPT-4o (Best Quality)' },
-      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
-      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Legacy)' },
+      { id: 'gpt-4o', name: 'GPT-4o' },
+      { id: 'gpt-5-mini', name: 'GPT-5 Mini' },
+      { id: 'gpt-5', name: 'GPT-5 (Best Quality)' },
+      { id: 'o3-mini', name: 'o3 Mini (Reasoning)' },
     ],
     requiresApiKey: true,
     freeTier: false,
