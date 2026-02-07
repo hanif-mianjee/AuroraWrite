@@ -43,9 +43,18 @@ Can you please analyze the suggestion system, the prompts, the category selectio
 
 ---
 
-Please check the code for underline system. For the firsts time, the underlines are placed correctly, but when I applied the suggestion, the offset is updated for the next suggesions, but the underlines remains on the same possitions. This also happening when a suggestion is applied, system reanalyzed the text, the old suggestions remains on the same possition, some time outside the suggestion words. Can you please analyze the issue/bug and fix it for all the categories. Please sure you do not break the existing functionality
+√ Please check the code for underline system. For the firsts time, the underlines are placed correctly, but when I applied the suggestion, the offset is updated for the next suggesions, but the underlines remains on the same possitions. This also happening when a suggestion is applied, system reanalyzed the text, the old suggestions remains on the same possition, some time outside the suggestion words. Can you please analyze the issue/bug and fix it for all the categories. Please sure you do not break the existing functionality
 
 ---
+
+√ Why analysis triggered every apply. Can you please analyze why it is reanalizing when user applied any suggestion? Does this not cost API calls. Is this unnessary to reanalyze. What should be the best practice for a spelling checking software. what the does grammarly do for the same situations? Pleae analyze suggest best solution that is best for the user experience and also best for the API calls.
+
+---
+
+The issue is still the. I notiched that is inly happening for the spelling category. when I fix the any middle error, the rest random underlines get missplaced. Please rethink, re check the entire flow, find the root cause, don't just hit and try, you have alreay changed alot but did not fix the issue. I would suggest, check all the offsets for every category, remove all the underlines and events, reapply all the underlines for all the categories. make sure there is not memory leak or performance issues.
+
+---
+
 
 # Prompts
 

@@ -411,12 +411,16 @@ export class InputTextStore {
 
     // Calculate the offset delta from the replacement
     const delta = issue.suggestedText.length - issue.originalText.length;
+    console.log(`[AuroraWrite:applyLocalChange] Delta: ${delta} (${issue.suggestedText.length} - ${issue.originalText.length})`);
+    console.log(`[AuroraWrite:applyLocalChange] Issue offset used for lookup: ${issue.startOffset}`);
 
     // Find the block containing this issue and update it
     for (let i = 0; i < state.blocks.length; i++) {
       const block = state.blocks[i];
+      console.log(`[AuroraWrite:applyLocalChange] Checking block ${i}: ${block.startOffset}-${block.endOffset}`);
 
       if (issue.startOffset >= block.startOffset && issue.startOffset < block.endOffset) {
+        console.log(`[AuroraWrite:applyLocalChange] Found containing block ${i}`);
         // This is the block containing the issue
         const newBlockEnd = block.endOffset + delta;
         const newBlockText = newFullText.slice(block.startOffset, newBlockEnd);
@@ -432,6 +436,7 @@ export class InputTextStore {
         // FIX: Adjust remaining issues in THIS block that come after the applied fix
         for (const blockIssue of block.issues) {
           if (blockIssue.startOffset > issue.startOffset) {
+            console.log(`[AuroraWrite:applyLocalChange] Adjusting "${blockIssue.originalText}": ${blockIssue.startOffset} -> ${blockIssue.startOffset + delta}`);
             blockIssue.startOffset += delta;
             blockIssue.endOffset += delta;
           }
