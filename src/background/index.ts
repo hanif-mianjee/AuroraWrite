@@ -1,8 +1,9 @@
 import { LLMFactory } from './providers';
-import { getSettings, getApiKey } from '../shared/utils/storage';
+import { getSettings, getApiKey, saveSettings } from '../shared/utils/storage';
 import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, BlockResultMessage, BlockErrorMessage, VerifyResultMessage, VerifyErrorMessage } from '../shared/types/messages';
 import type { LLMProviderType } from '../shared/types/llm';
 import type { TextIssue } from '../shared/types/analysis';
+import type { Settings } from '../shared/types/settings';
 
 console.log('[AuroraWrite] Background service worker starting');
 
@@ -20,14 +21,97 @@ function getActiveProvider(settings: { providerSettings?: { activeProvider: LLMP
   return LLMFactory.getProvider(providerType);
 }
 
-async function getActiveApiKey(settings: { providerSettings?: { activeProvider: LLMProviderType; providers: Record<string, { apiKey: string }> } }): Promise<string> {
-  const providerType = settings.providerSettings?.activeProvider || 'groq';
-  const providerApiKey = settings.providerSettings?.providers?.[providerType]?.apiKey;
-  if (providerApiKey) {
-    return providerApiKey;
+
+function getAvailableFallbackProviders(settings: Settings): LLMProviderType[] {
+  const activeProvider = settings.providerSettings?.activeProvider || 'groq';
+  const allTypes = LLMFactory.getProviderTypes();
+  const activeIndex = allTypes.indexOf(activeProvider);
+
+  // Round-robin order starting after active provider
+  const ordered = [
+    ...allTypes.slice(activeIndex + 1),
+    ...allTypes.slice(0, activeIndex),
+  ];
+
+  // Only include providers that have API keys configured
+  return ordered.filter(type => {
+    const key = settings.providerSettings?.providers?.[type]?.apiKey;
+    return key && key.trim().length > 0;
+  });
+}
+
+async function executeWithFallback<T>(
+  settings: Settings,
+  operation: (providerType: LLMProviderType, apiKey: string) => Promise<T>,
+): Promise<T> {
+  const activeProvider = settings.providerSettings?.activeProvider || 'groq';
+  const activeApiKey = settings.providerSettings?.providers?.[activeProvider]?.apiKey
+    || (activeProvider === 'groq' ? await getApiKey() : '');
+
+  // Try active provider first (if it has a key)
+  if (activeApiKey) {
+    try {
+      return await operation(activeProvider, activeApiKey);
+    } catch (activeError) {
+      console.warn(`[AuroraWrite] Active provider ${activeProvider} failed:`, activeError);
+
+      if (!settings.providerSettings?.autoFallback) {
+        throw activeError;
+      }
+
+      // Try fallback providers
+      const fallbacks = getAvailableFallbackProviders(settings);
+      if (fallbacks.length === 0) {
+        throw activeError;
+      }
+
+      for (const fallbackType of fallbacks) {
+        const fallbackKey = settings.providerSettings!.providers![fallbackType]!.apiKey;
+        try {
+          console.log(`[AuroraWrite] Trying fallback provider: ${fallbackType}`);
+          const result = await operation(fallbackType, fallbackKey);
+          // Persist the new active provider (fire-and-forget)
+          console.log(`[AuroraWrite] Fallback to ${fallbackType} succeeded, persisting as active provider`);
+          saveSettings({
+            providerSettings: { ...settings.providerSettings!, activeProvider: fallbackType },
+          }).catch(() => {});
+          return result;
+        } catch (fallbackError) {
+          console.warn(`[AuroraWrite] Fallback provider ${fallbackType} also failed:`, fallbackError);
+        }
+      }
+
+      // All providers failed, throw the original error
+      throw activeError;
+    }
   }
-  // Fallback to legacy apiKey for backwards compatibility
-  return await getApiKey();
+
+  // Active provider has no key — if fallback enabled, try others
+  if (settings.providerSettings?.autoFallback) {
+    const fallbacks = getAvailableFallbackProviders(settings);
+    if (fallbacks.length > 0) {
+      let firstError: Error | null = null;
+      for (const fallbackType of fallbacks) {
+        const fallbackKey = settings.providerSettings!.providers![fallbackType]!.apiKey;
+        try {
+          console.log(`[AuroraWrite] Active provider has no key, trying fallback: ${fallbackType}`);
+          const result = await operation(fallbackType, fallbackKey);
+          saveSettings({
+            providerSettings: { ...settings.providerSettings!, activeProvider: fallbackType },
+          }).catch(() => {});
+          return result;
+        } catch (err) {
+          if (!firstError) firstError = err instanceof Error ? err : new Error(String(err));
+          console.warn(`[AuroraWrite] Fallback provider ${fallbackType} failed:`, err);
+        }
+      }
+      if (firstError) throw firstError;
+    }
+  }
+
+  // No key and no fallback available
+  const provider = LLMFactory.getProvider(activeProvider);
+  throw new Error(`API key not configured. Please set your ${provider.config.name} API key in extension options.`);
 }
 
 chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
@@ -52,25 +136,13 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
       console.log('[AuroraWrite] ANALYZE_TEXT for field:', fieldId, 'text length:', text.length);
 
       const settings = await getSettings();
-      const apiKey = await getActiveApiKey(settings);
-      const provider = getActiveProvider(settings);
-      console.log('[AuroraWrite] API key configured:', !!apiKey, 'Provider:', provider.type);
-
-      if (!apiKey) {
-        console.log('[AuroraWrite] No API key, sending error');
-        const errorResponse: AnalysisErrorMessage = {
-          type: 'ANALYSIS_ERROR',
-          payload: { fieldId, error: `API key not configured. Please set your ${provider.config.name} API key in extension options.` },
-        };
-        if (sender.tab?.id) {
-          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
-        }
-        return errorResponse;
-      }
 
       try {
-        console.log('[AuroraWrite] Calling', provider.config.name, 'API...');
-        const result = await provider.analyzeText(text, apiKey, settings);
+        const result = await executeWithFallback(settings, (providerType, apiKey) => {
+          const provider = LLMFactory.getProvider(providerType);
+          console.log('[AuroraWrite] Calling', provider.config.name, 'API...');
+          return provider.analyzeText(text, apiKey, settings);
+        });
         console.log('[AuroraWrite] Analysis complete, issues found:', result.issues.length);
         const response: AnalysisResultMessage = {
           type: 'ANALYSIS_RESULT',
@@ -98,19 +170,6 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
       console.log('[AuroraWrite] ANALYZE_BLOCK for field:', fieldId, 'block:', blockId, 'text length:', blockText.length);
 
       const settings = await getSettings();
-      const apiKey = await getActiveApiKey(settings);
-      const provider = getActiveProvider(settings);
-
-      if (!apiKey) {
-        const errorResponse: BlockErrorMessage = {
-          type: 'BLOCK_ERROR',
-          payload: { fieldId, blockId, error: `API key not configured. Please set your ${provider.config.name} API key in extension options.` },
-        };
-        if (sender.tab?.id) {
-          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
-        }
-        return errorResponse;
-      }
 
       try {
         // Analyze just this block with context
@@ -118,7 +177,10 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
         const contextSuffix = nextBlockText ? `\n\n[Following context: ${nextBlockText.slice(0, 100)}]` : '';
         const textWithContext = contextPrefix + blockText + contextSuffix;
 
-        const result = await provider.analyzeText(textWithContext, apiKey, settings);
+        const result = await executeWithFallback(settings, (providerType, apiKey) => {
+          const provider = LLMFactory.getProvider(providerType);
+          return provider.analyzeText(textWithContext, apiKey, settings);
+        });
 
         // Filter issues to only those within the block text (not in context)
         const contextPrefixLength = contextPrefix.length;
@@ -126,13 +188,11 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
 
         const blockIssues: TextIssue[] = result.issues
           .filter(issue => {
-            // Issue must be within the block text portion
             return issue.startOffset >= contextPrefixLength &&
                    issue.endOffset <= blockEndInContext;
           })
           .map(issue => ({
             ...issue,
-            // Adjust offsets: remove context prefix, add block's position in full text
             startOffset: issue.startOffset - contextPrefixLength + blockStartOffset,
             endOffset: issue.endOffset - contextPrefixLength + blockStartOffset,
           }));
@@ -165,29 +225,17 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
       console.log('[AuroraWrite:Stability] VERIFY_BLOCK for field:', fieldId, 'block:', blockId);
 
       const settings = await getSettings();
-      const apiKey = await getActiveApiKey(settings);
-      const provider = getActiveProvider(settings);
-
-      if (!apiKey) {
-        const errorResponse: VerifyErrorMessage = {
-          type: 'VERIFY_ERROR',
-          payload: { fieldId, blockId, error: `API key not configured.` },
-        };
-        if (sender.tab?.id) {
-          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
-        }
-        return errorResponse;
-      }
 
       try {
-        // Verify this block with context using lighter verification prompt
         const contextPrefix = previousBlockText ? `[Context before: ${previousBlockText.slice(-50)}]\n\n` : '';
         const contextSuffix = nextBlockText ? `\n\n[Context after: ${nextBlockText.slice(0, 50)}]` : '';
         const textWithContext = contextPrefix + blockText + contextSuffix;
 
-        const result = await provider.verifyText(textWithContext, apiKey, settings);
+        const result = await executeWithFallback(settings, (providerType, apiKey) => {
+          const provider = LLMFactory.getProvider(providerType);
+          return provider.verifyText(textWithContext, apiKey, settings);
+        });
 
-        // Filter issues to only those within the block text (not in context)
         const contextPrefixLength = contextPrefix.length;
         const blockEndInContext = contextPrefixLength + blockText.length;
 
@@ -249,22 +297,12 @@ async function handleMessage(message: Message, sender: chrome.runtime.MessageSen
       console.log('[AuroraWrite] TRANSFORM_TEXT request:', requestId, transformationType);
 
       const settings = await getSettings();
-      const apiKey = await getActiveApiKey(settings);
-      const provider = getActiveProvider(settings);
-
-      if (!apiKey) {
-        const errorResponse: TransformErrorMessage = {
-          type: 'TRANSFORM_ERROR',
-          payload: { requestId, error: `API key not configured. Please set your ${provider.config.name} API key in extension options.` },
-        };
-        if (sender.tab?.id) {
-          chrome.tabs.sendMessage(sender.tab.id, errorResponse);
-        }
-        return errorResponse;
-      }
 
       try {
-        const transformedText = await provider.transformText(text, transformationType, apiKey, settings, customPrompt);
+        const transformedText = await executeWithFallback(settings, (providerType, apiKey) => {
+          const provider = LLMFactory.getProvider(providerType);
+          return provider.transformText(text, transformationType, apiKey, settings, customPrompt);
+        });
         console.log('[AuroraWrite] Transform complete');
         const response: TransformResultMessage = {
           type: 'TRANSFORM_RESULT',

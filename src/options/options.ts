@@ -68,6 +68,11 @@ class OptionsPage {
     this.renderProviderGrid();
     this.updateProviderConfig();
 
+    const autoFallbackCheckbox = document.getElementById('auto-fallback') as HTMLInputElement;
+    if (autoFallbackCheckbox) {
+      autoFallbackCheckbox.checked = this.settings?.providerSettings?.autoFallback ?? false;
+    }
+
     for (const category of CATEGORIES) {
       const config = this.settings.categories[category];
       const checkbox = document.getElementById(`cat-${category}`) as HTMLInputElement;
@@ -274,8 +279,10 @@ class OptionsPage {
 
       if (response.type === 'API_KEY_VALID') {
         // Save provider settings
+        const autoFallbackCheckbox = document.getElementById('auto-fallback') as HTMLInputElement;
         const providerSettings: ProviderSettings = {
           activeProvider: this.activeProvider,
+          autoFallback: autoFallbackCheckbox?.checked ?? this.settings?.providerSettings?.autoFallback ?? false,
           providers: {
             ...this.settings?.providerSettings?.providers,
             [this.activeProvider]: { apiKey, model },
@@ -378,8 +385,10 @@ class OptionsPage {
     const model = modelSelect?.value || 'llama-3.1-8b-instant';
 
     // Save provider settings along with other settings
+    const autoFallbackCheckbox = document.getElementById('auto-fallback') as HTMLInputElement;
     const providerSettings: ProviderSettings = {
       activeProvider: this.activeProvider,
+      autoFallback: autoFallbackCheckbox?.checked ?? this.settings?.providerSettings?.autoFallback ?? false,
       providers: {
         ...this.settings?.providerSettings?.providers,
         [this.activeProvider]: {

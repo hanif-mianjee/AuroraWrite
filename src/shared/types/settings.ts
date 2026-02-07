@@ -8,6 +8,7 @@ export interface CategorySettings {
 
 export interface ProviderSettings {
   activeProvider: LLMProviderType;
+  autoFallback?: boolean;
   providers: {
     [key in LLMProviderType]?: {
       apiKey: string;

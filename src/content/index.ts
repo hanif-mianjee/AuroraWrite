@@ -175,6 +175,10 @@ class AuroraWrite {
     console.log(`[AuroraWrite] Starting analysis for field ${field.id}, text: "${text.slice(0, 100)}${text.length > 100 ? '...' : ''}"`);
 
     try {
+      // Track block errors for this analysis run
+      let blockErrorCount = 0;
+      let lastBlockError = '';
+
       // Use incremental block-based analysis
       const result = blockAnalyzer.analyzeText(field.id, text, {
         onBlockAnalysisStart: (fieldId, blockId) => {
@@ -195,11 +199,18 @@ class AuroraWrite {
         },
         onBlockAnalysisError: (fieldId, blockId, error) => {
           console.error(`[AuroraWrite] Block ${blockId} analysis error:`, error);
+          blockErrorCount++;
+          lastBlockError = error;
         },
         onAllBlocksComplete: (fieldId, analysisResult) => {
           console.log(`[AuroraWrite] All blocks complete for field ${fieldId}, total issues: ${analysisResult.issues.length}`);
           this.overlayManager.updateAnalysis(fieldId, analysisResult);
           if (this.activeFieldId === fieldId) {
+            // If all blocks errored and no issues found, show error state
+            if (blockErrorCount > 0 && analysisResult.issues.length === 0) {
+              this.widget.showError(field.element, lastBlockError);
+              return;
+            }
             this.widget.update(analysisResult.issues);
           }
 

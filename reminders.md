@@ -65,6 +65,23 @@ make sure this don't cause memory or performance issue for the long lists of sug
 
 √ Lets work on a new improvement. The underlines for every suggestion already looking good but I think something is missing. like the mouse event is only on the underline, it does not include the words and phrases. For a better user experience, I would sugges also include text. Furthermore, when mouse hover on the underline including the text, what if we add background or highlighet color to the text? how does this sounds to you? You an also use the design guide from the project. Search internet. Search how grammarly is better on user experience. make sure you don't break existing functionality. use your creative liberty.
 
+---
+
+Add new improvement: Sometime user face problems like API rate limit, provider's qouta exceeded, or the key is expired. There could be other issues as well. To overcome this, can we add automatic provider switch?
+
+Add a toggle in option page to enable this feature. Where feature is enabled, automatically swith to next available provider. Make last switched provider as current.
+
+Hanlde corner cases. Use best practices.
+
+Do not break any existing functionality.
+
+---
+
+Enable popup setting for basic settings
+Clear console noice
+
+---
+
 # Prompts
 
 ## Screenshot generator
@@ -88,3 +105,8 @@ Please explore entire project, understand what it is about, what features, it ha
 - Repo URL: https://github.com/hanif-mianjee/AuroraWrite
 
 Please thinkhard, use your creative libertities, design professionaly, clean, modern, intutive, functional, design that everyone loves.
+
+---
+
+groq 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
+togather tgp_v1_JZ6UfL-6g2CMzlPVbBrfmDsdLQT47qNs3Sydk3Pa9GU
