@@ -27,6 +27,13 @@ This is an LLM response quality issue, not a code bug. The prompt tells the AI t
 **Potential improvement:** The prompt could be enhanced to better detect repeated/duplicate word issues and provide the correct minimal fix. Would you like me to adjust the system prompt to better handle these cases?
 
 ---
+Fix offset issue:
+In this AI writing assistant chrome extension, I face a bug. Below is the detail, please analyze the code, find why is the issue. Similar functionality is in many places like applying suggested corrections or improvements, applying to multiple places, replacing text, replacing phrases.
+
+Bug:
+When I apply the suggestions one by one the first suggestion applied correctly on correct place, but for the other suggestions, they applied to wrong possition. I suspect that is because start and end is now change due to first suggestion applied with different character count. Can you please analyze and let me know what is the issue and in which places, there could be multiple places.
+
+---
 
 # Prompts
 

@@ -429,6 +429,14 @@ export class InputTextStore {
         // Mark as already analyzed (no need to re-analyze for this change)
         block.isAnalyzed = true;
 
+        // FIX: Adjust remaining issues in THIS block that come after the applied fix
+        for (const blockIssue of block.issues) {
+          if (blockIssue.startOffset > issue.startOffset) {
+            blockIssue.startOffset += delta;
+            blockIssue.endOffset += delta;
+          }
+        }
+
         // Adjust offsets for subsequent blocks
         for (let j = i + 1; j < state.blocks.length; j++) {
           state.blocks[j].startOffset += delta;
