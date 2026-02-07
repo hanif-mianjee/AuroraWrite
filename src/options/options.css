@@ -321,6 +321,33 @@ body {
   border-radius: 12px;
 }
 
+/* Provider Option Row */
+.provider-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-top: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+}
+
+.provider-option-info {
+  flex: 1;
+}
+
+.provider-option-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.provider-option .help-text {
+  margin-top: 4px;
+}
+
 /* Form Elements */
 .form-group {
   margin-bottom: 20px;
