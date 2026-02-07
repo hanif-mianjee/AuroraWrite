@@ -14,6 +14,7 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
+        popup: 'src/popup/index.html',
         options: 'src/options/index.html',
         welcome: 'src/welcome/index.html',
       },

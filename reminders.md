@@ -67,7 +67,7 @@ make sure this don't cause memory or performance issue for the long lists of sug
 
 ---
 
-Add new improvement: Sometime user face problems like API rate limit, provider's qouta exceeded, or the key is expired. There could be other issues as well. To overcome this, can we add automatic provider switch?
+√ Add new improvement: Sometime user face problems like API rate limit, provider's qouta exceeded, or the key is expired. There could be other issues as well. To overcome this, can we add automatic provider switch?
 
 Add a toggle in option page to enable this feature. Where feature is enabled, automatically swith to next available provider. Make last switched provider as current.
 
@@ -77,7 +77,15 @@ Do not break any existing functionality.
 
 ---
 
-Enable popup setting for basic settings
+√ Add new improvement: currently the extension only has options page. Can you please also add the options/settings popup with basic settings of category toggle, remove ignored domains, and open options page.
+
+Please match popup UI with the extensions's theme. Use your creative liberty. use ui ux plugin. use design guide md.
+furthermore, it is possible to automatically pin the extention in the browser? does the manifest has such option?
+
+Do not break any existing functionality
+
+---
+
 Clear console noice
 
 ---
