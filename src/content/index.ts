@@ -32,6 +32,7 @@ class AuroraWrite {
   private postFixVerificationTimer: Map<string, ReturnType<typeof setTimeout>> = new Map(); // Delayed verification after last fix
   private appliedFixCategories: Map<string, Set<IssueCategory>> = new Map(); // Track categories of fixes applied
   private suppressInputAnalysis: Map<string, number> = new Map(); // Temporarily suppress input-triggered analysis after applying fix
+  private popoverFieldId: string | null = null; // Track which field the popover is showing for
 
   constructor() {
     this.detector = new TextFieldDetector();
@@ -79,6 +80,7 @@ class AuroraWrite {
       this.widget.hide();
       this.popover.hide();
       this.activeFieldId = null;
+      this.popoverFieldId = null;
     }
   }
 
@@ -758,13 +760,14 @@ class AuroraWrite {
     const positions = handler.getTextPositions(text, issue.startOffset, issue.endOffset);
 
     if (positions.rects.length > 0) {
+      this.popoverFieldId = fieldId;
       this.popover.show(issue, positions.rects[0]);
     } else {
     }
   }
 
   private acceptSuggestion(issue: TextIssue): void {
-    const fieldId = this.activeFieldId || this.lastActiveFieldId;
+    const fieldId = this.popoverFieldId || this.activeFieldId || this.lastActiveFieldId;
     if (!fieldId) {
       return;
     }
@@ -947,7 +950,7 @@ class AuroraWrite {
   }
 
   private ignoreIssue(issue: TextIssue): void {
-    const fieldId = this.activeFieldId || this.lastActiveFieldId;
+    const fieldId = this.popoverFieldId || this.activeFieldId || this.lastActiveFieldId;
     if (!fieldId) {
       return;
     }
@@ -1015,7 +1018,7 @@ class AuroraWrite {
     }
 
     // Update widget with remaining issues from the store
-    const fieldId = this.activeFieldId || this.lastActiveFieldId;
+    const fieldId = this.popoverFieldId || this.activeFieldId || this.lastActiveFieldId;
     if (fieldId) {
       const remainingIssues = inputTextStore.getAllIssues(fieldId);
       this.widget.update(remainingIssues);
