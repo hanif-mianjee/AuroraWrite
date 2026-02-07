@@ -55,6 +55,11 @@ export class TextareaHandler {
   getTextPositions(text: string, startOffset: number, endOffset: number): TextPosition {
     const mirror = this.createMirror();
 
+    // CRITICAL: Update mirror dimensions on each call to ensure accurate positioning
+    // The textarea dimensions may have changed since the mirror was created
+    mirror.style.width = `${this.textarea.clientWidth}px`;
+    mirror.style.height = `${this.textarea.clientHeight}px`;
+
     mirror.textContent = '';
 
     const beforeText = text.substring(0, startOffset);
