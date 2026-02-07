@@ -140,14 +140,18 @@ export class OverlayManager {
     const overlay = this.overlays.get(fieldId);
     if (!overlay) return;
 
+    console.log(`[AuroraWrite:Overlay] updateAnalysis called with ${result.issues.length} issues`);
     overlay.issues = result.issues;
     this.updateUnderlines(overlay);
   }
 
   private updateUnderlines(overlay: FieldOverlay): void {
     const text = overlay.handler.getText();
+    console.log(`[AuroraWrite:Overlay] updateUnderlines - text length: ${text.length}, issues: ${overlay.issues.length}`);
 
     overlay.renderer.render(overlay.issues, (issue) => {
+      console.log(`[AuroraWrite:Overlay] getRects called for "${issue.originalText}" at ${issue.startOffset}-${issue.endOffset}`);
+      console.log(`[AuroraWrite:Overlay] Text at offset: "${text.substring(issue.startOffset, issue.endOffset)}"`);
       const positions = overlay.handler.getTextPositions(text, issue.startOffset, issue.endOffset);
       return positions.rects;
     });
@@ -201,8 +205,13 @@ export class OverlayManager {
     const overlay = this.overlays.get(fieldId);
     if (!overlay) return;
 
+    // Remove issue from overlay's issue list
     overlay.issues = overlay.issues.filter(i => i.id !== issueId);
-    this.updateUnderlines(overlay);
+
+    // Only remove the specific underline - DON'T reposition other underlines here!
+    // Repositioning happens in updateAnalysis() after text replacement and offset adjustment.
+    // Calling updateUnderlines here would reposition with stale offsets/text.
+    overlay.renderer.removeUnderline(issueId);
   }
 
   removeOverlay(fieldId: string): void {

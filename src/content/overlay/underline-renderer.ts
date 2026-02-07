@@ -20,8 +20,9 @@ export class UnderlineRenderer {
   }
 
   render(issues: TextIssue[], getRects: (issue: TextIssue) => DOMRect[]): void {
-    // Build set of issue IDs that should have visible underlines
-    const visibleIds = new Set<string>();
+    // ALWAYS clear all existing underlines and recreate from scratch
+    // This prevents any stale state accumulation from element reuse
+    this.clear();
 
     for (const issue of issues) {
       if (issue.ignored) continue;
@@ -29,33 +30,11 @@ export class UnderlineRenderer {
       const rects = getRects(issue);
       if (rects.length === 0) continue;
 
-      visibleIds.add(issue.id);
+      const element = this.createUnderlineElement(issue);
+      this.container.appendChild(element);
+      this.underlines.set(issue.id, { element, issue });
 
-      let underline = this.underlines.get(issue.id);
-
-      if (!underline) {
-        const element = this.createUnderlineElement(issue);
-        this.container.appendChild(element);
-        underline = { element, issue };
-        this.underlines.set(issue.id, underline);
-      } else {
-        // CRITICAL: Update the cached issue reference with new offsets
-        // This ensures getUnderlineAt() returns issues with correct offsets
-        // and click handlers use the updated issue data
-        underline.issue = issue;
-        this.underlines.set(issue.id, underline);
-      }
-
-      this.positionUnderline(underline.element, rects, issue.category, issue);
-    }
-
-    // Remove underlines that should no longer be visible
-    // This includes: issues not in the list, ignored issues, and issues with empty rects
-    for (const [id, underline] of this.underlines) {
-      if (!visibleIds.has(id)) {
-        underline.element.remove();
-        this.underlines.delete(id);
-      }
+      this.positionUnderline(element, rects, issue.category, issue);
     }
   }
 
@@ -195,6 +174,14 @@ export class UnderlineRenderer {
       }
     }
     return null;
+  }
+
+  removeUnderline(issueId: string): void {
+    const underline = this.underlines.get(issueId);
+    if (underline) {
+      underline.element.remove();
+      this.underlines.delete(issueId);
+    }
   }
 
   clear(): void {

@@ -10,7 +10,6 @@ import { addIgnoredWord, addIgnoredDomain, isDomainIgnored } from '../shared/uti
 import { performanceLogger } from '../shared/utils/performance';
 import { blockAnalyzer, stabilityPassManager } from '../ai';
 import { inputTextStore } from '../state';
-import { hashBlock } from '../block';
 import type { TextIssue, AnalysisResult, IssueCategory } from '../shared/types/analysis';
 import type { Message, AnalysisResultMessage, AnalysisErrorMessage, TransformResultMessage, TransformErrorMessage, TransformationType, BlockResultMessage, BlockErrorMessage, VerifyResultMessage, VerifyErrorMessage } from '../shared/types/messages';
 
@@ -30,6 +29,9 @@ class AuroraWrite {
   private pendingTransformRequestId: string | null = null;
   private sessionIgnoredIssues: Map<string, Set<string>> = new Map();
   private lastAnalysisTime: Map<string, number> = new Map(); // Track when analysis was last run
+  private postFixVerificationTimer: Map<string, ReturnType<typeof setTimeout>> = new Map(); // Delayed verification after last fix
+  private appliedFixCategories: Map<string, Set<IssueCategory>> = new Map(); // Track categories of fixes applied
+  private suppressInputAnalysis: Map<string, number> = new Map(); // Temporarily suppress input-triggered analysis after applying fix
 
   constructor() {
     this.detector = new TextFieldDetector();
@@ -122,7 +124,23 @@ class AuroraWrite {
       this.analyzeField(field);
     }, 700); // 700ms debounce as per incremental architecture spec
 
-    return debouncedAnalyze;
+    // Return a handler that also cancels pending post-fix verification
+    return () => {
+      // Check if we should suppress analysis (just applied a suggestion)
+      const suppressUntil = this.suppressInputAnalysis.get(field.id);
+      if (suppressUntil && Date.now() < suppressUntil) {
+        console.log('[AuroraWrite] Suppressing input analysis - suggestion just applied');
+        return;
+      }
+      this.suppressInputAnalysis.delete(field.id);
+
+      // Cancel any pending post-fix verification - user is typing new content
+      this.cancelPostFixVerification(field.id);
+      // Clear applied fix categories since user is now typing fresh content
+      this.appliedFixCategories.delete(field.id);
+      // Trigger the debounced analysis
+      debouncedAnalyze();
+    };
   }
 
   private async analyzeField(field: TextFieldInfo): Promise<void> {
@@ -140,9 +158,11 @@ class AuroraWrite {
     // Record analysis time to prevent duplicate analyses
     this.lastAnalysisTime.set(field.id, Date.now());
 
-    // Cancel any existing analysis and stability pass
+    // Cancel any existing analysis, stability pass, and post-fix verification
     blockAnalyzer.cancelAnalysis(field.id);
     stabilityPassManager.cancelStabilityPass(field.id);
+    this.cancelPostFixVerification(field.id);
+    this.appliedFixCategories.delete(field.id);
 
     // Start performance tracking
     performanceLogger.startAnalysis(field.id);
@@ -328,8 +348,20 @@ class AuroraWrite {
       ? issues.filter(issue => !sessionIgnored.has(issue.originalText.toLowerCase()))
       : issues;
 
-    // Delegate to stability pass manager with requestId for validation
-    stabilityPassManager.handleVerificationResult(fieldId, blockId, filteredIssues, requestId);
+    // Check if this is a post-fix verification (bypasses stabilityPassManager)
+    const isPostFixVerification = requestId?.startsWith('postfix_');
+
+    if (isPostFixVerification) {
+      // Handle post-fix verification directly
+      const accepted = inputTextStore.mergeBlockResult(fieldId, blockId, filteredIssues, false, requestId);
+      if (accepted) {
+        inputTextStore.setBlockAnalyzing(fieldId, blockId, false);
+        console.log(`[AuroraWrite] Post-fix verification for block ${blockId}: ${filteredIssues.length} issues`);
+      }
+    } else {
+      // Delegate to stability pass manager with requestId for validation
+      stabilityPassManager.handleVerificationResult(fieldId, blockId, filteredIssues, requestId);
+    }
 
     // Update UI with any new issues
     const allIssues = inputTextStore.getAllIssues(fieldId);
@@ -345,10 +377,22 @@ class AuroraWrite {
 
   private handleVerifyError(message: VerifyErrorMessage): void {
     const { fieldId, blockId, error } = message.payload;
-    console.error(`[AuroraWrite:Stability] Verification error for field ${fieldId}, block ${blockId}:`, error);
+    console.error(`[AuroraWrite] Verification error for field ${fieldId}, block ${blockId}:`, error);
 
-    // Delegate to stability pass manager
-    stabilityPassManager.handleVerificationError(fieldId, blockId, error);
+    // Check if this might be a post-fix verification error
+    const state = inputTextStore.getState(fieldId);
+    const block = state?.blocks.find(b => b.id === blockId);
+    const isPostFixVerification = block?.activeRequestId?.startsWith('postfix_');
+
+    if (isPostFixVerification) {
+      // Handle post-fix verification error - just mark block as not analyzing
+      inputTextStore.setBlockAnalyzing(fieldId, blockId, false);
+      // Show clean state anyway (user fixed all issues, verification just failed)
+      this.widget.update([]);
+    } else {
+      // Delegate to stability pass manager
+      stabilityPassManager.handleVerificationError(fieldId, blockId, error);
+    }
   }
 
   private setupOverlayEvents(): void {
@@ -504,14 +548,20 @@ class AuroraWrite {
       return { ...issue, startOffset, endOffset };
     });
 
+    // Suppress input-triggered analysis (prevents spinner from setFieldText triggering input event)
+    this.suppressInputAnalysis.set(fieldId, Date.now() + 100);
+
     // Set the final text in one operation
     this.overlayManager.setFieldText(fieldId, text);
 
-    // Update overlay with ONLY the adjusted non-spelling issues (preserves them)
-    this.overlayManager.updateAnalysis(fieldId, {
-      text,
-      issues: adjustedNonSpellingIssues,
-      timestamp: Date.now(),
+    // CRITICAL: Wait for browser layout reflow before calculating underline positions
+    requestAnimationFrame(() => {
+      // Update overlay with ONLY the adjusted non-spelling issues (preserves them)
+      this.overlayManager.updateAnalysis(fieldId, {
+        text,
+        issues: adjustedNonSpellingIssues,
+        timestamp: Date.now(),
+      });
     });
 
     // Update widget with remaining non-spelling issues
@@ -542,8 +592,22 @@ class AuroraWrite {
     // Record performance metric
     performanceLogger.recordSuggestionAcceptance(fieldId);
 
-    // Schedule stability pass to find newly exposed issues (after user is idle)
-    this.scheduleStabilityPass(fieldId);
+    // Track that spelling was fixed (for smart verification)
+    if (!this.appliedFixCategories.has(fieldId)) {
+      this.appliedFixCategories.set(fieldId, new Set());
+    }
+    this.appliedFixCategories.get(fieldId)!.add('spelling');
+
+    // If no non-spelling issues remain, schedule post-fix verification
+    // to catch grammar/clarity issues revealed by spelling fixes
+    if (adjustedNonSpellingIssues.length === 0) {
+      console.log('[AuroraWrite] All issues fixed, scheduling post-fix verification');
+      this.schedulePostFixVerification(fieldId);
+    } else {
+      // There are still non-spelling issues - no need to verify yet
+      // User will likely address those, triggering verification after the last one
+      console.log('[AuroraWrite] Non-spelling issues remain, skipping verification');
+    }
   }
 
   private setupPopoverEvents(): void {
@@ -702,101 +766,176 @@ class AuroraWrite {
       return;
     }
 
-    // Cancel any pending stability pass - user is actively making changes
+    // Cancel any pending stability pass and post-fix verification - user is actively making changes
     stabilityPassManager.cancelStabilityPass(fieldId);
+    this.cancelPostFixVerification(fieldId);
+
+    // Track the category of applied fix (for smart verification decisions)
+    if (!this.appliedFixCategories.has(fieldId)) {
+      this.appliedFixCategories.set(fieldId, new Set());
+    }
+    this.appliedFixCategories.get(fieldId)!.add(issue.category);
 
     // Remove the issue from overlay IMMEDIATELY (before text replacement)
     // This removes the underline instantly
     this.overlayManager.removeIssue(fieldId, issue.id);
     this.popover.hide();
 
-    // Check remaining issues BEFORE applying changes
-    // (We remove from store first to get accurate count)
-    inputTextStore.removeIssue(fieldId, issue.id);
-    const remainingIssues = inputTextStore.getAllIssues(fieldId);
-    const isLastSuggestion = remainingIssues.length === 0;
+    // Suppress input-triggered analysis for 100ms (prevents spinner from replaceText triggering input event)
+    this.suppressInputAnalysis.set(fieldId, Date.now() + 100);
 
-    // Now replace the text in the DOM
+    // DEBUG: Log the issue being fixed
+    console.log(`[AuroraWrite:DEBUG] Fixing issue: "${issue.originalText}" -> "${issue.suggestedText}" at offset ${issue.startOffset}-${issue.endOffset}`);
+
+    // Replace the text in the DOM FIRST
     this.overlayManager.replaceText(fieldId, issue);
+
+    // Get the new text from DOM after replacement
+    const handler = this.handlers.get(fieldId);
+    if (!handler) return;
+    const newText = handler.getText();
+
+    // DEBUG: Log before applyLocalChange
+    const beforeIssues = inputTextStore.getAllIssues(fieldId);
+    console.log(`[AuroraWrite:DEBUG] Before applyLocalChange - ${beforeIssues.length} issues:`,
+      beforeIssues.map(i => `"${i.originalText}" at ${i.startOffset}-${i.endOffset}`));
+
+    // Use applyLocalChange to handle all offset adjustments correctly
+    // This removes the issue AND adjusts all remaining issue offsets in one operation
+    inputTextStore.applyLocalChange(fieldId, issue, newText);
+
+    // Get remaining issues with CORRECT offsets
+    const remainingIssues = inputTextStore.getAllIssues(fieldId);
+
+    // DEBUG: Log after applyLocalChange
+    console.log(`[AuroraWrite:DEBUG] After applyLocalChange - ${remainingIssues.length} issues:`,
+      remainingIssues.map(i => `"${i.originalText}" at ${i.startOffset}-${i.endOffset}`));
+    const isLastSuggestion = remainingIssues.length === 0;
 
     // Record that we avoided an API call
     performanceLogger.recordSuggestionAcceptance(fieldId);
 
-    // Update widget with remaining issues
+    // CRITICAL: Wait for browser layout reflow before calculating underline positions
+    // Without this, positions are calculated before DOM has updated, causing misalignment
+    requestAnimationFrame(() => {
+      // Update overlay with adjusted issues so underlines render at correct positions
+      this.overlayManager.updateAnalysis(fieldId, {
+        text: newText,
+        issues: remainingIssues,
+        timestamp: Date.now(),
+      });
+    });
+
+    // Update widget with remaining issues (shows "All Fixed" if empty)
     this.widget.update(remainingIssues);
 
     if (isLastSuggestion) {
-      // This was the last suggestion - clear state and trigger fresh analysis
-      console.log('[AuroraWrite] Last suggestion applied, clearing state for re-analysis');
-      inputTextStore.clearState(fieldId);
+      // This was the last suggestion - show "All Fixed" immediately (already done by widget.update)
+      console.log('[AuroraWrite] Last suggestion applied, showing clean state immediately');
 
-      // Directly trigger analysis after DOM has updated
-      // Use setTimeout to ensure DOM changes from replaceText are complete
-      const field = this.detector.getFieldById(fieldId);
-      if (field) {
-        setTimeout(() => {
-          // Double-check state is still clear (no other analysis started)
-          const currentState = inputTextStore.getState(fieldId);
-          if (!currentState || currentState.blocks.length === 0) {
-            console.log('[AuroraWrite] Triggering fresh analysis after last suggestion');
-            this.analyzeField(field);
-          } else {
-            console.log('[AuroraWrite] Analysis already started by another handler, skipping');
-          }
-        }, 50); // Small delay to let DOM update
+      // Get the categories that were fixed in this session
+      const fixedCategories = this.appliedFixCategories.get(fieldId) || new Set();
+      const needsVerification = fixedCategories.has('spelling') || fixedCategories.has('grammar');
+
+      if (needsVerification) {
+        // Schedule delayed verification (1.5s) to catch cascading issues
+        // e.g., fixing spelling might reveal grammar issues
+        console.log('[AuroraWrite] Scheduling delayed verification for cascading issues');
+        this.schedulePostFixVerification(fieldId);
+      } else {
+        // Style/clarity/tone/rephrase fixes rarely cause cascading issues
+        console.log('[AuroraWrite] No verification needed - only style/tone fixes applied');
+        // Clear state for future analysis but don't trigger immediate re-analysis
+        inputTextStore.clearState(fieldId);
+        this.appliedFixCategories.delete(fieldId);
       }
-    } else {
-      // More issues remain - apply local change to preserve state
-      const handler = this.handlers.get(fieldId);
-      if (handler) {
-        const newText = handler.getText();
-        const state = inputTextStore.getState(fieldId);
-        if (state) {
-          // Update block text and offsets for the change
-          const delta = issue.suggestedText.length - issue.originalText.length;
-          for (const block of state.blocks) {
-            if (issue.startOffset >= block.startOffset && issue.startOffset < block.endOffset) {
-              // This block contains the fix
-              const newBlockEnd = block.endOffset + delta;
-              const newBlockText = newText.slice(block.startOffset, newBlockEnd);
-              block.text = newBlockText;
-              block.endOffset = newBlockEnd;
-              block.hash = hashBlock(newBlockText);
-
-              // FIX: Adjust remaining issues in THIS block that come after the applied fix
-              for (const blockIssue of block.issues) {
-                if (blockIssue.startOffset > issue.startOffset) {
-                  blockIssue.startOffset += delta;
-                  blockIssue.endOffset += delta;
-                }
-              }
-            } else if (block.startOffset > issue.startOffset) {
-              // Adjust subsequent block offsets
-              block.startOffset += delta;
-              block.endOffset += delta;
-              for (const blockIssue of block.issues) {
-                blockIssue.startOffset += delta;
-                blockIssue.endOffset += delta;
-              }
-            }
-          }
-          state.text = newText;
-
-          // FIX: Sync adjusted issues to overlay manager so underlines render correctly
-          const adjustedIssues = inputTextStore.getAllIssues(fieldId);
-          this.overlayManager.updateAnalysis(fieldId, {
-            text: newText,
-            issues: adjustedIssues,
-            timestamp: Date.now(),
-          });
-
-          // Update widget with adjusted issues
-          this.widget.update(adjustedIssues);
-        }
-      }
-      // Schedule stability pass for when user is idle
-      this.scheduleStabilityPass(fieldId);
     }
+    // NOTE: Don't schedule stability pass here - we only verify after ALL fixes are applied
+    // This saves API calls when user is rapidly accepting suggestions
+  }
+
+  /**
+   * Schedule a delayed verification pass after all suggestions are applied.
+   * Uses lighter VERIFY_BLOCK instead of full ANALYZE_BLOCK.
+   * Only runs if spelling/grammar fixes were applied (which can reveal cascading issues).
+   */
+  private schedulePostFixVerification(fieldId: string): void {
+    const POST_FIX_VERIFICATION_DELAY = 1500; // 1.5 seconds
+
+    const timer = setTimeout(() => {
+      this.postFixVerificationTimer.delete(fieldId);
+      this.runPostFixVerification(fieldId);
+    }, POST_FIX_VERIFICATION_DELAY);
+
+    this.postFixVerificationTimer.set(fieldId, timer);
+  }
+
+  /**
+   * Cancel any pending post-fix verification for a field.
+   */
+  private cancelPostFixVerification(fieldId: string): void {
+    const timer = this.postFixVerificationTimer.get(fieldId);
+    if (timer) {
+      clearTimeout(timer);
+      this.postFixVerificationTimer.delete(fieldId);
+    }
+  }
+
+  /**
+   * Run post-fix verification using the lighter VERIFY_BLOCK message.
+   * This catches cascading issues (e.g., grammar issues revealed after spelling fix).
+   */
+  private runPostFixVerification(fieldId: string): void {
+    const handler = this.handlers.get(fieldId);
+    if (!handler) return;
+
+    const text = handler.getText();
+    if (text.length < 10) {
+      // Too short to analyze - just clear and return
+      inputTextStore.clearState(fieldId);
+      this.appliedFixCategories.delete(fieldId);
+      return;
+    }
+
+    console.log('[AuroraWrite] Running post-fix verification');
+
+    // Clear old state and re-initialize with fresh blocks
+    inputTextStore.clearState(fieldId);
+    const { allBlocks } = inputTextStore.updateText(fieldId, text);
+
+    // Track analysis time to prevent duplicate analysis from input handler
+    this.lastAnalysisTime.set(fieldId, Date.now());
+
+    // Show loading state while verifying
+    const field = this.detector.getFieldById(fieldId);
+    if (field) {
+      this.widget.showLoading(field.element);
+    }
+
+    // Send VERIFY_BLOCK for each block (lighter than full analysis)
+    for (const block of allBlocks) {
+      const requestId = `postfix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      inputTextStore.setBlockRequestId(fieldId, block.id, requestId);
+      inputTextStore.setBlockAnalyzing(fieldId, block.id, true);
+
+      const context = inputTextStore.getBlockContext(fieldId, block.id);
+
+      chrome.runtime.sendMessage({
+        type: 'VERIFY_BLOCK',
+        payload: {
+          fieldId,
+          blockId: block.id,
+          blockText: block.text,
+          previousBlockText: context.previousBlockText,
+          nextBlockText: context.nextBlockText,
+          blockStartOffset: block.startOffset,
+          requestId,
+        },
+      });
+    }
+
+    // Clear applied fix categories
+    this.appliedFixCategories.delete(fieldId);
   }
 
   private ignoreIssue(issue: TextIssue): void {
