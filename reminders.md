@@ -51,11 +51,15 @@ Can you please analyze the suggestion system, the prompts, the category selectio
 
 ---
 
-When user applies the suggestion anywhere in the middle of the text which change the offsets, all the following underlines posstions get missplaced. This is happening suggestions applied one by one. I have noticed this issue in spelling category suggesion at the movement, but could be happening in other categories as well. Can you please check the root cause. Don't analyze the surface-level. You must fix this issue smartly without breaking any existing functionality. 
+√ When user applies the suggestion anywhere in the middle of the text which change the offsets, all the following underlines posstions get missplaced. This is happening suggestions applied one by one. I have noticed this issue in spelling category suggesion at the movement, but could be happening in other categories as well. Can you please check the root cause. Don't analyze the surface-level. You must fix this issue smartly without breaking any existing functionality. 
 
 One suggestion that I could give is that when a suggestion is applied, remove all the underlines and the eventlisteners, then recreate all the underlines using the new offsets for all the categories. and register the events. use the existing logic for creating underlines but with new offsets.
 
 make sure this don't cause memory or performance issue for the long lists of suggestions. Do not break existing code or break business logic.
+
+---
+
+√ I found a bug, when there are multiple text input or text area, the extension does not work properly. For example, it first analyzed the first text area, I applied a couple suggestion in the first input. Then I analyze the second text area, it suggested a few correction. But I clicked on suggestions in first text are to apply there but it did not worked. The underlines were there in the first textarea. I think when analyzing any other input text, the extenssion loses the possitions or list of suggested texts. I think it should maintain the list for different input individually for the better user experience. What do you suggest?
 
 ---
 
