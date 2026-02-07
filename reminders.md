@@ -86,7 +86,7 @@ Do not break any existing functionality
 
 ---
 
-Clear console noice
+√ Improvement: Can you please check the extension for the console logs. There is too much noice in the console. Can you please remove all the console logs and just keep the important once? only the important events.
 
 ---
 

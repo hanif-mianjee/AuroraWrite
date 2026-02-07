@@ -120,7 +120,6 @@ class AuroraWrite {
       // Must be > 700ms (debounce time) to catch the debounced call
       const lastTime = this.lastAnalysisTime.get(field.id);
       if (lastTime && Date.now() - lastTime < 800) {
-        console.log('[AuroraWrite] Skipping debounced analysis - recent analysis exists');
         return;
       }
       this.analyzeField(field);
@@ -131,7 +130,6 @@ class AuroraWrite {
       // Check if we should suppress analysis (just applied a suggestion)
       const suppressUntil = this.suppressInputAnalysis.get(field.id);
       if (suppressUntil && Date.now() < suppressUntil) {
-        console.log('[AuroraWrite] Suppressing input analysis - suggestion just applied');
         return;
       }
       this.suppressInputAnalysis.delete(field.id);
@@ -172,8 +170,6 @@ class AuroraWrite {
     // Show loading state
     this.widget.showLoading(field.element);
 
-    console.log(`[AuroraWrite] Starting analysis for field ${field.id}, text: "${text.slice(0, 100)}${text.length > 100 ? '...' : ''}"`);
-
     try {
       // Track block errors for this analysis run
       let blockErrorCount = 0;
@@ -182,10 +178,8 @@ class AuroraWrite {
       // Use incremental block-based analysis
       const result = blockAnalyzer.analyzeText(field.id, text, {
         onBlockAnalysisStart: (fieldId, blockId) => {
-          console.log(`[AuroraWrite] Block analysis started: ${blockId}`);
         },
         onBlockAnalysisComplete: (fieldId, blockId, issues) => {
-          console.log(`[AuroraWrite] Block analysis complete: ${blockId}, issues: ${issues.length}`);
           // Update overlay incrementally as each block completes
           const allIssues = inputTextStore.getAllIssues(fieldId);
           this.overlayManager.updateAnalysis(fieldId, {
@@ -203,7 +197,6 @@ class AuroraWrite {
           lastBlockError = error;
         },
         onAllBlocksComplete: (fieldId, analysisResult) => {
-          console.log(`[AuroraWrite] All blocks complete for field ${fieldId}, total issues: ${analysisResult.issues.length}`);
           this.overlayManager.updateAnalysis(fieldId, analysisResult);
           if (this.activeFieldId === fieldId) {
             // If all blocks errored and no issues found, show error state
@@ -228,11 +221,7 @@ class AuroraWrite {
       );
 
       // If no dirty blocks, the callback is called synchronously
-      if (result.dirtyBlocks.length === 0) {
-        console.log('[AuroraWrite] No dirty blocks, using cached analysis');
-      } else {
-        console.log(`[AuroraWrite] Analyzing ${result.dirtyBlocks.length} dirty blocks out of ${result.allBlocks.length} total`);
-      }
+      // Analysis started (dirty blocks sent to background)
     } catch (error) {
       console.error('[AuroraWrite] Failed to start block analysis:', error);
     }
@@ -245,14 +234,11 @@ class AuroraWrite {
   private scheduleStabilityPass(fieldId: string): void {
     stabilityPassManager.scheduleStabilityCheck(fieldId, {
       onStabilityPassStart: (fId, blockIds) => {
-        console.log(`[AuroraWrite:Stability] Starting stability pass for ${blockIds.length} blocks`);
         performanceLogger.startAnalysis(`${fId}_stability`);
       },
       onBlockVerified: (fId, blockId, newIssues) => {
-        console.log(`[AuroraWrite:Stability] Block ${blockId} verified, new issues: ${newIssues.length}`);
       },
       onStabilityPassComplete: (fId, result) => {
-        console.log(`[AuroraWrite:Stability] Stability pass complete, total issues: ${result.issues.length}`);
         performanceLogger.recordAnalysis(
           `${fId}_stability`,
           inputTextStore.getState(fId)?.blocks.length || 0,
@@ -261,7 +247,6 @@ class AuroraWrite {
         );
       },
       onStabilityPassCancelled: (fId) => {
-        console.log(`[AuroraWrite:Stability] Stability pass cancelled for field ${fId}`);
       },
     });
   }
@@ -369,7 +354,7 @@ class AuroraWrite {
       const accepted = inputTextStore.mergeBlockResult(fieldId, blockId, filteredIssues, false, requestId);
       if (accepted) {
         inputTextStore.setBlockAnalyzing(fieldId, blockId, false);
-        console.log(`[AuroraWrite] Post-fix verification for block ${blockId}: ${filteredIssues.length} issues`);
+        // Post-fix verification accepted
       }
     } else {
       // Delegate to stability pass manager with requestId for validation
@@ -442,8 +427,6 @@ class AuroraWrite {
   private async toggleCurrentDomain(): Promise<void> {
     const domain = window.location.hostname;
     await addIgnoredDomain(domain);
-    console.log(`[AuroraWrite] Domain ${domain} added to ignored list`);
-
     // Destroy the extension for this page
     this.destroy();
 
@@ -491,11 +474,8 @@ class AuroraWrite {
     const fieldId = this.activeFieldId || this.lastActiveFieldId;
     if (!fieldId) return;
 
-    console.log('[AuroraWrite] Manual re-analyze triggered');
-
     // Clear provider cache first to force fresh API call
     chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' }, () => {
-      console.log('[AuroraWrite] Provider cache cleared');
 
       // Clear block state to force fresh analysis
       inputTextStore.clearState(fieldId);
@@ -517,8 +497,6 @@ class AuroraWrite {
       .filter(i => i.category === 'spelling' && !i.ignored)
       .sort((a, b) => b.startOffset - a.startOffset); // Sort by offset descending to apply from end
 
-    console.log('[AuroraWrite] acceptAllSpelling - spelling issues:', spellingIssues.length);
-
     if (spellingIssues.length === 0) return;
 
     // Cancel any pending stability pass
@@ -526,24 +504,18 @@ class AuroraWrite {
 
     // Get NON-spelling issues to preserve them (with adjusted offsets)
     const nonSpellingIssues = issues.filter(i => i.category !== 'spelling' && !i.ignored);
-    console.log('[AuroraWrite] Preserving non-spelling issues:', nonSpellingIssues.length);
 
     // Get the current text from the overlay manager
     let text = this.overlayManager.getFieldText(fieldId);
     if (!text) return;
-
-    console.log('[AuroraWrite] Original text:', text);
 
     // Build list of offset adjustments (spelling issues are already sorted descending)
     const offsetAdjustments: { position: number; delta: number }[] = [];
     for (const issue of spellingIssues) {
       const delta = issue.suggestedText.length - issue.originalText.length;
       offsetAdjustments.push({ position: issue.startOffset, delta });
-      console.log('[AuroraWrite] Fixing:', issue.originalText, '->', issue.suggestedText, 'at', issue.startOffset);
       text = text.substring(0, issue.startOffset) + issue.suggestedText + text.substring(issue.endOffset);
     }
-
-    console.log('[AuroraWrite] New text:', text);
 
     // Adjust offsets for non-spelling issues that come AFTER each spelling fix
     const adjustedNonSpellingIssues = nonSpellingIssues.map(issue => {
@@ -617,12 +589,7 @@ class AuroraWrite {
     // If no non-spelling issues remain, schedule post-fix verification
     // to catch grammar/clarity issues revealed by spelling fixes
     if (adjustedNonSpellingIssues.length === 0) {
-      console.log('[AuroraWrite] All issues fixed, scheduling post-fix verification');
       this.schedulePostFixVerification(fieldId);
-    } else {
-      // There are still non-spelling issues - no need to verify yet
-      // User will likely address those, triggering verification after the last one
-      console.log('[AuroraWrite] Non-spelling issues remain, skipping verification');
     }
   }
 
@@ -800,9 +767,6 @@ class AuroraWrite {
     // Suppress input-triggered analysis for 100ms (prevents spinner from replaceText triggering input event)
     this.suppressInputAnalysis.set(fieldId, Date.now() + 100);
 
-    // DEBUG: Log the issue being fixed
-    console.log(`[AuroraWrite:DEBUG] Fixing issue: "${issue.originalText}" -> "${issue.suggestedText}" at offset ${issue.startOffset}-${issue.endOffset}`);
-
     // CRITICAL: Clear ALL underlines BEFORE replacing text.
     // When text is replaced, remaining words shift positions but underline DOM elements
     // stay at old positions until requestAnimationFrame runs. This creates visual misalignment.
@@ -817,21 +781,12 @@ class AuroraWrite {
     if (!handler) return;
     const newText = handler.getText();
 
-    // DEBUG: Log before applyLocalChange
-    const beforeIssues = inputTextStore.getAllIssues(fieldId);
-    console.log(`[AuroraWrite:DEBUG] Before applyLocalChange - ${beforeIssues.length} issues:`,
-      beforeIssues.map(i => `"${i.originalText}" at ${i.startOffset}-${i.endOffset}`));
-
     // Use applyLocalChange to handle all offset adjustments correctly
     // This removes the issue AND adjusts all remaining issue offsets in one operation
     inputTextStore.applyLocalChange(fieldId, issue, newText);
 
     // Get remaining issues with CORRECT offsets
     const remainingIssues = inputTextStore.getAllIssues(fieldId);
-
-    // DEBUG: Log after applyLocalChange
-    console.log(`[AuroraWrite:DEBUG] After applyLocalChange - ${remainingIssues.length} issues:`,
-      remainingIssues.map(i => `"${i.originalText}" at ${i.startOffset}-${i.endOffset}`));
     const isLastSuggestion = remainingIssues.length === 0;
 
     // Record that we avoided an API call
@@ -852,21 +807,13 @@ class AuroraWrite {
     this.widget.update(remainingIssues);
 
     if (isLastSuggestion) {
-      // This was the last suggestion - show "All Fixed" immediately (already done by widget.update)
-      console.log('[AuroraWrite] Last suggestion applied, showing clean state immediately');
-
       // Get the categories that were fixed in this session
       const fixedCategories = this.appliedFixCategories.get(fieldId) || new Set();
       const needsVerification = fixedCategories.has('spelling') || fixedCategories.has('grammar');
 
       if (needsVerification) {
-        // Schedule delayed verification (1.5s) to catch cascading issues
-        // e.g., fixing spelling might reveal grammar issues
-        console.log('[AuroraWrite] Scheduling delayed verification for cascading issues');
         this.schedulePostFixVerification(fieldId);
       } else {
-        // Style/clarity/tone/rephrase fixes rarely cause cascading issues
-        console.log('[AuroraWrite] No verification needed - only style/tone fixes applied');
         // Clear state for future analysis but don't trigger immediate re-analysis
         inputTextStore.clearState(fieldId);
         this.appliedFixCategories.delete(fieldId);
@@ -918,8 +865,6 @@ class AuroraWrite {
       this.appliedFixCategories.delete(fieldId);
       return;
     }
-
-    console.log('[AuroraWrite] Running post-fix verification');
 
     // Clear old state and re-initialize with fresh blocks
     inputTextStore.clearState(fieldId);
@@ -989,8 +934,6 @@ class AuroraWrite {
     this.widget.update(remainingIssues);
 
     if (isLastIssue) {
-      // This was the last issue - clear state and trigger fresh analysis
-      console.log('[AuroraWrite] Last issue ignored, clearing state for re-analysis');
       inputTextStore.clearState(fieldId);
 
       // Trigger fresh analysis
@@ -999,7 +942,6 @@ class AuroraWrite {
         setTimeout(() => {
           const currentState = inputTextStore.getState(fieldId);
           if (!currentState || currentState.blocks.length === 0) {
-            console.log('[AuroraWrite] Triggering fresh analysis after last issue ignored');
             this.analyzeField(field);
           }
         }, 50);
@@ -1035,8 +977,6 @@ class AuroraWrite {
       this.widget.update(remainingIssues);
 
       if (remainingIssues.length === 0) {
-        // All issues gone - clear state and trigger fresh analysis
-        console.log('[AuroraWrite] All issues ignored, clearing state for re-analysis');
         inputTextStore.clearState(fieldId);
 
         const field = this.detector.getFieldById(fieldId);
@@ -1044,7 +984,6 @@ class AuroraWrite {
           setTimeout(() => {
             const currentState = inputTextStore.getState(fieldId);
             if (!currentState || currentState.blocks.length === 0) {
-              console.log('[AuroraWrite] Triggering fresh analysis after all issues ignored');
               this.analyzeField(field);
             }
           }, 50);
@@ -1082,7 +1021,6 @@ async function initAuroraWrite(): Promise<void> {
   const isIgnored = await isDomainIgnored(domain);
 
   if (isIgnored) {
-    console.log(`[AuroraWrite] Domain ${domain} is ignored, not starting`);
     return;
   }
 

@@ -119,7 +119,6 @@ export class BlockAnalyzer {
     if (requestId && pending.blockRequestIds.has(blockId)) {
       const expectedId = pending.blockRequestIds.get(blockId);
       if (expectedId !== requestId) {
-        console.log(`[AuroraWrite] Discarding stale block result for ${blockId}`);
         return;
       }
     }
@@ -127,7 +126,6 @@ export class BlockAnalyzer {
     // Update the store with block results (not a stability pass)
     const accepted = inputTextStore.mergeBlockResult(fieldId, blockId, issues, false, requestId);
     if (!accepted) {
-      console.log(`[AuroraWrite] Block result rejected for ${blockId}`);
       return;
     }
 

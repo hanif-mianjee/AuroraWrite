@@ -106,7 +106,6 @@ export class UnderlineRenderer {
       hitArea.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('[AuroraWrite] Segment clicked for issue:', issue.id);
         if (this.onSegmentClick) {
           this.onSegmentClick(issue);
         }
@@ -124,7 +123,6 @@ export class UnderlineRenderer {
 
         // Trigger popover after 300ms
         hoverTimeout = setTimeout(() => {
-          console.log('[AuroraWrite] Segment hover triggered for issue:', issue.id);
           if (this.onSegmentClick) {
             this.onSegmentClick(issue);
           }

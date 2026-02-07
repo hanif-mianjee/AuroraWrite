@@ -92,7 +92,6 @@ class PerformanceLogger {
    */
   recordSuggestionAcceptance(fieldId: string): void {
     this.metrics.apiCallsSaved++;
-    console.log(`[AuroraWrite:Perf] Suggestion accepted without API call for field ${fieldId}`);
   }
 
   /**
@@ -141,11 +140,7 @@ class PerformanceLogger {
       ? ((savedBlocks / event.totalBlocks) * 100).toFixed(1)
       : '0';
 
-    console.log(
-      `[AuroraWrite:Perf] ${event.type.toUpperCase()} analysis: ` +
-        `${event.dirtyBlocks}/${event.totalBlocks} blocks analyzed ` +
-        `(${efficiency}% cached), ${event.latencyMs.toFixed(0)}ms`
-    );
+    // Event logged internally for summary
   }
 
   /**

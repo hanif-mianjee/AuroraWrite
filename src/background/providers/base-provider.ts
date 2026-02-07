@@ -275,10 +275,8 @@ export abstract class BaseProvider implements LLMProvider {
 
     const cached = this.cache.get(text);
     if (cached) {
-      console.log('[AuroraWrite] PROVIDER CACHE HIT - returning cached result with', cached.issues.length, 'issues');
       return this.filterIssues(cached, settings);
     }
-    console.log('[AuroraWrite] PROVIDER CACHE MISS - will call API');
 
     const pendingKey = text;
     const pending = this.pendingRequests.get(pendingKey);
@@ -309,9 +307,6 @@ export abstract class BaseProvider implements LLMProvider {
       .filter(([_, config]) => config.enabled)
       .map(([category]) => category);
 
-    console.log('[AuroraWrite] Enabled categories:', enabledCategories);
-    console.log('[AuroraWrite] Text being analyzed (first 200 chars):', text.substring(0, 200));
-
     const content = await this.callAPI(
       apiKey,
       settings,
@@ -320,10 +315,7 @@ export abstract class BaseProvider implements LLMProvider {
       true
     );
 
-    console.log('[AuroraWrite] Raw API response:', content);
-
     const parsed = this.parseResponse(content, text);
-    console.log('[AuroraWrite] Parsed issues before filtering:', parsed.length);
     const result: AnalysisResult = {
       text,
       issues: parsed,
@@ -359,10 +351,7 @@ export abstract class BaseProvider implements LLMProvider {
       true
     );
 
-    console.log('[AuroraWrite:Stability] Verification response:', content);
-
     const parsed = this.parseResponse(content, text);
-    console.log('[AuroraWrite:Stability] Verification issues found:', parsed.length);
 
     const result: AnalysisResult = {
       text,
@@ -424,11 +413,7 @@ Apply this instruction to the following text.`;
       return [];
     }
 
-    console.log('[AuroraWrite] Parsed JSON, issues array:', parsed.issues);
-    console.log('[AuroraWrite] Original text for matching:', originalText);
-
     if (!parsed.issues || !Array.isArray(parsed.issues)) {
-      console.log('[AuroraWrite] No issues array in response');
       return [];
     }
 
@@ -443,7 +428,6 @@ Apply this instruction to the following text.`;
       const normalizedOriginal = issue.originalText.trim().toLowerCase();
       const normalizedSuggested = issue.suggestedText.trim().toLowerCase();
       if (normalizedOriginal === normalizedSuggested) {
-        console.log('[AuroraWrite] Skipping false positive - same text:', issue.originalText);
         continue;
       }
 
