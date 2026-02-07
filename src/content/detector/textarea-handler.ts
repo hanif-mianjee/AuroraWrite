@@ -28,13 +28,14 @@ export class TextareaHandler {
       'boxSizing', 'textAlign', 'direction',
     ];
 
+    // Base styles - overflow:visible and auto height ensure text wraps same as textarea
     this.mirror.style.cssText = `
       position: absolute;
       top: 0;
       left: 0;
       visibility: hidden;
       pointer-events: none;
-      overflow: hidden;
+      overflow: visible;
       white-space: pre-wrap;
       word-wrap: break-word;
     `;
@@ -45,8 +46,14 @@ export class TextareaHandler {
       );
     });
 
+    // CRITICAL: Remove border from mirror - we want the mirror content area to match
+    // textarea's clientWidth exactly. Border would reduce content area with border-box.
+    this.mirror.style.border = 'none';
+    this.mirror.style.borderWidth = '0';
+
+    // Initial width - will be updated on each getTextPositions call
     this.mirror.style.width = `${this.textarea.clientWidth}px`;
-    this.mirror.style.height = `${this.textarea.clientHeight}px`;
+    this.mirror.style.height = 'auto';
 
     document.body.appendChild(this.mirror);
     return this.mirror;
@@ -55,12 +62,29 @@ export class TextareaHandler {
   getTextPositions(text: string, startOffset: number, endOffset: number): TextPosition {
     const mirror = this.createMirror();
 
-    // CRITICAL: Update mirror dimensions on each call to ensure accurate positioning
-    // The textarea dimensions may have changed since the mirror was created
-    mirror.style.width = `${this.textarea.clientWidth}px`;
-    mirror.style.height = `${this.textarea.clientHeight}px`;
+    // CRITICAL: Calculate the ACTUAL text content width of the textarea
+    // clientWidth includes padding but we need to account for scrollbar if present
+    // scrollWidth vs clientWidth difference indicates scrollbar presence
+    const styles = window.getComputedStyle(this.textarea);
+    const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = parseFloat(styles.paddingRight) || 0;
 
-    mirror.textContent = '';
+    // The actual width available for text content
+    // For textareas, we need the width that text actually renders in
+    // This is clientWidth (includes padding, excludes scrollbar)
+    const contentWidth = this.textarea.clientWidth;
+
+    // Set mirror to match EXACTLY the textarea's rendering
+    mirror.style.width = `${contentWidth}px`;
+    mirror.style.height = 'auto'; // Let it grow to fit content naturally
+    mirror.style.maxHeight = 'none'; // Remove any height constraints
+    mirror.style.overflow = 'visible'; // Don't clip content
+
+    // CRITICAL: Completely rebuild mirror content to ensure accurate layout
+    // Remove all children instead of just clearing textContent
+    while (mirror.firstChild) {
+      mirror.removeChild(mirror.firstChild);
+    }
 
     const beforeText = text.substring(0, startOffset);
     const targetText = text.substring(startOffset, endOffset);
@@ -80,11 +104,20 @@ export class TextareaHandler {
     mirror.appendChild(targetSpan);
     mirror.appendChild(afterSpan);
 
+    // Force layout reflow before measuring
+    // This ensures the browser computes the actual positions
+    void mirror.offsetHeight;
+
     const textareaRect = this.textarea.getBoundingClientRect();
     const mirrorRect = mirror.getBoundingClientRect();
 
     const scrollTop = this.textarea.scrollTop;
     const scrollLeft = this.textarea.scrollLeft;
+
+    // Account for textarea border (mirror has no border, but textarea does)
+    // This offset ensures underlines align with text inside the bordered textarea
+    const borderLeft = parseFloat(styles.borderLeftWidth) || 0;
+    const borderTop = parseFloat(styles.borderTopWidth) || 0;
 
     // Use getClientRects() to get individual line rects for wrapped text
     const clientRects = targetSpan.getClientRects();
@@ -93,10 +126,10 @@ export class TextareaHandler {
     for (let i = 0; i < clientRects.length; i++) {
       const rect = clientRects[i];
       // Limit width to not exceed textarea bounds
-      const maxWidth = textareaRect.width - (rect.left - mirrorRect.left) - 10;
+      const maxWidth = textareaRect.width - (rect.left - mirrorRect.left) - borderLeft - 10;
       const adjustedRect = new DOMRect(
-        textareaRect.left + (rect.left - mirrorRect.left) - scrollLeft,
-        textareaRect.top + (rect.top - mirrorRect.top) - scrollTop,
+        textareaRect.left + borderLeft + (rect.left - mirrorRect.left) - scrollLeft,
+        textareaRect.top + borderTop + (rect.top - mirrorRect.top) - scrollTop,
         Math.min(rect.width, maxWidth),
         rect.height
       );
@@ -106,10 +139,10 @@ export class TextareaHandler {
     // Fallback if no rects found
     if (rects.length === 0) {
       const targetRect = targetSpan.getBoundingClientRect();
-      const maxWidth = textareaRect.width - (targetRect.left - mirrorRect.left) - 10;
+      const maxWidth = textareaRect.width - (targetRect.left - mirrorRect.left) - borderLeft - 10;
       rects.push(new DOMRect(
-        textareaRect.left + (targetRect.left - mirrorRect.left) - scrollLeft,
-        textareaRect.top + (targetRect.top - mirrorRect.top) - scrollTop,
+        textareaRect.left + borderLeft + (targetRect.left - mirrorRect.left) - scrollLeft,
+        textareaRect.top + borderTop + (targetRect.top - mirrorRect.top) - scrollTop,
         Math.min(targetRect.width, maxWidth),
         targetRect.height
       ));
@@ -132,11 +165,28 @@ export class TextareaHandler {
 
     this.textarea.value = newText;
     this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Invalidate cached mirror since text layout may have changed
+    this.invalidateMirror();
   }
 
   setText(text: string): void {
     this.textarea.value = text;
     this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Invalidate cached mirror since text layout may have changed
+    this.invalidateMirror();
+  }
+
+  /**
+   * Invalidate the cached mirror element.
+   * Call this when text changes to ensure fresh layout calculation.
+   */
+  invalidateMirror(): void {
+    if (this.mirror) {
+      this.mirror.remove();
+      this.mirror = null;
+    }
   }
 
   destroy(): void {

@@ -58,7 +58,7 @@ export class UnderlineRenderer {
       segment.className = 'aurora-underline-segment';
 
       const left = rect.left - containerRect.left;
-      const top = rect.top - containerRect.top + rect.height - thickness;
+      const top = rect.top - containerRect.top + rect.height - thickness + 1;
 
       // Cap width to not extend beyond container
       const availableWidth = containerRect.width - left - 5;

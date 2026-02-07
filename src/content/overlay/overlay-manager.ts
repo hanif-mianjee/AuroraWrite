@@ -214,6 +214,18 @@ export class OverlayManager {
     overlay.renderer.removeUnderline(issueId);
   }
 
+  /**
+   * Clear all underlines visually without affecting the issue data.
+   * Used before text replacement to prevent visual misalignment during the gap
+   * between text change and position recalculation.
+   */
+  hideAllUnderlines(fieldId: string): void {
+    const overlay = this.overlays.get(fieldId);
+    if (!overlay) return;
+
+    overlay.renderer.clear();
+  }
+
   removeOverlay(fieldId: string): void {
     const overlay = this.overlays.get(fieldId);
     if (!overlay) return;

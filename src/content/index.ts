@@ -551,6 +551,9 @@ class AuroraWrite {
     // Suppress input-triggered analysis (prevents spinner from setFieldText triggering input event)
     this.suppressInputAnalysis.set(fieldId, Date.now() + 100);
 
+    // CRITICAL: Clear ALL underlines BEFORE replacing text to avoid visual misalignment
+    this.overlayManager.hideAllUnderlines(fieldId);
+
     // Set the final text in one operation
     this.overlayManager.setFieldText(fieldId, text);
 
@@ -776,8 +779,7 @@ class AuroraWrite {
     }
     this.appliedFixCategories.get(fieldId)!.add(issue.category);
 
-    // Remove the issue from overlay IMMEDIATELY (before text replacement)
-    // This removes the underline instantly
+    // Remove the issue from overlay's issue list
     this.overlayManager.removeIssue(fieldId, issue.id);
     this.popover.hide();
 
@@ -787,7 +789,13 @@ class AuroraWrite {
     // DEBUG: Log the issue being fixed
     console.log(`[AuroraWrite:DEBUG] Fixing issue: "${issue.originalText}" -> "${issue.suggestedText}" at offset ${issue.startOffset}-${issue.endOffset}`);
 
-    // Replace the text in the DOM FIRST
+    // CRITICAL: Clear ALL underlines BEFORE replacing text.
+    // When text is replaced, remaining words shift positions but underline DOM elements
+    // stay at old positions until requestAnimationFrame runs. This creates visual misalignment.
+    // By clearing underlines now, we avoid showing them at wrong positions during the gap.
+    this.overlayManager.hideAllUnderlines(fieldId);
+
+    // Replace the text in the DOM
     this.overlayManager.replaceText(fieldId, issue);
 
     // Get the new text from DOM after replacement
