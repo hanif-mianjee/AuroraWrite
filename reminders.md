@@ -51,7 +51,11 @@ Can you please analyze the suggestion system, the prompts, the category selectio
 
 ---
 
-The issue is still the. I notiched that is inly happening for the spelling category. when I fix the any middle error, the rest random underlines get missplaced. Please rethink, re check the entire flow, find the root cause, don't just hit and try, you have alreay changed alot but did not fix the issue. I would suggest, check all the offsets for every category, remove all the underlines and events, reapply all the underlines for all the categories. make sure there is not memory leak or performance issues.
+When user applies the suggestion anywhere in the middle of the text which change the offsets, all the following underlines posstions get missplaced. This is happening suggestions applied one by one. I have noticed this issue in spelling category suggesion at the movement, but could be happening in other categories as well. Can you please check the root cause. Don't analyze the surface-level. You must fix this issue smartly without breaking any existing functionality. 
+
+One suggestion that I could give is that when a suggestion is applied, remove all the underlines and the eventlisteners, then recreate all the underlines using the new offsets for all the categories. and register the events. use the existing logic for creating underlines but with new offsets.
+
+make sure this don't cause memory or performance issue for the long lists of suggestions. Do not break existing code or break business logic.
 
 ---
 
