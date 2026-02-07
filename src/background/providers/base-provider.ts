@@ -18,13 +18,17 @@ CATEGORIES (STRICT DEFINITIONS)
 
 • spelling
 ONLY actual typos or misspellings of single words.
+A spelling error means the original word is NOT a valid English word.
 Must be ONE word only — never a phrase or sentence.
 Examples:
 "teh" → "the"
 "recieve" → "receive"
+"accomodation" → "accommodation"
+"definately" → "definitely"
 
 • grammar
-Clear, rule-based grammatical errors.
+Clear, rule-based grammatical errors where BOTH the original AND suggested words are valid English words.
+If the original word is misspelled (not a real word), use "spelling" instead.
 Examples:
 "he go" → "he goes"
 "a apple" → "an apple"
@@ -62,6 +66,33 @@ Examples:
 • rephrase
 ONLY when a sentence is structurally broken or genuinely unclear.
 This is a LAST RESORT.
+
+-------------------
+MANDATORY CATEGORY DECISION PROCESS
+-------------------
+
+For EVERY issue, follow this decision tree IN ORDER:
+
+1. Is the original text a SINGLE WORD that is misspelled (not a valid English dictionary word)?
+   → YES = "spelling" (STOP, do not consider other categories)
+   → NO = continue to step 2
+
+2. Is it a grammatical rule error (subject-verb agreement, articles, tense) where BOTH words are valid?
+   → YES = "grammar"
+
+3. Is it a mechanical issue (repeated words, double spaces, punctuation duplication)?
+   → YES = "style"
+
+4. Is it a wordy phrase with a standard shorter form?
+   → YES = "clarity"
+
+5. Is it harsh, aggressive, or unprofessional language?
+   → YES = "tone"
+
+6. Is the sentence structurally broken?
+   → YES = "rephrase"
+
+CRITICAL: Words like "recieved", "mesage", "accomodation", "excelent", "resturant", "delicous", "definately", "recomend", "beautful", "tommorow", "informaton", "confrence" are NOT valid English words. They are MISSPELLINGS and MUST be categorized as "spelling", NOT "grammar" or "tone".
 
 -------------------
 CRITICAL EXTRACTION RULES
