@@ -50,41 +50,60 @@ export class UnderlineRenderer {
     const config = CATEGORY_CONFIG[category];
     const containerRect = this.container.getBoundingClientRect();
     const thickness = config.thickness || 3;
+    const hoverBg = this.hexToRgba(config.color, 0.15);
 
     element.innerHTML = '';
 
     for (const rect of rects) {
-      const segment = document.createElement('div');
-      segment.className = 'aurora-underline-segment';
-
       const left = rect.left - containerRect.left;
-      const top = rect.top - containerRect.top + rect.height - thickness + 1;
+      const segmentTop = rect.top - containerRect.top + rect.height - thickness + 1;
 
       // Cap width to not extend beyond container
       const availableWidth = containerRect.width - left - 5;
       const width = Math.max(10, Math.min(rect.width, availableWidth));
 
       // Skip if position is outside container
-      if (left < 0 || left > containerRect.width || top < 0) {
+      if (left < 0 || left > containerRect.width || segmentTop < 0) {
         continue;
       }
+
+      // Hit area — covers full text height, handles all mouse events
+      const hitArea = document.createElement('div');
+      hitArea.className = 'aurora-underline-hitarea';
+      const hitTop = rect.top - containerRect.top;
+      hitArea.style.cssText = `
+        position: absolute;
+        left: ${Math.max(0, left)}px;
+        top: ${hitTop}px;
+        width: ${width}px;
+        height: ${rect.height}px;
+        pointer-events: auto;
+        cursor: pointer;
+        background: transparent;
+        border-radius: 3px;
+        transition: background 150ms ease;
+      `;
+
+      // Underline visual — thin strip, no pointer events
+      const segment = document.createElement('div');
+      segment.className = 'aurora-underline-segment';
 
       const underlineStyle = this.getUnderlineStyle(config.underlineStyle, config.color);
       segment.style.cssText = `
         position: absolute;
         left: ${Math.max(0, left)}px;
-        top: ${top + 1}px;
+        top: ${segmentTop + 1}px;
         width: ${width}px;
         height: ${thickness}px;
-        pointer-events: auto;
-        cursor: pointer;
+        pointer-events: none;
         ${underlineStyle}
         border-radius: 1px;
         opacity: 0.65;
+        transition: opacity 150ms ease;
       `;
 
-      // Add click handler for immediate response
-      segment.addEventListener('click', (e) => {
+      // Click handler on hit area
+      hitArea.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         console.log('[AuroraWrite] Segment clicked for issue:', issue.id);
@@ -93,10 +112,17 @@ export class UnderlineRenderer {
         }
       });
 
-      // Add hover handler with 300ms delay as alternative
+      // Hover handlers on hit area
       let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
 
-      segment.addEventListener('mouseenter', () => {
+      hitArea.addEventListener('mouseenter', () => {
+        // Highlight ALL hit areas and segments for this issue (multi-line support)
+        const allHitAreas = element.querySelectorAll('.aurora-underline-hitarea') as NodeListOf<HTMLElement>;
+        allHitAreas.forEach(h => h.style.background = hoverBg);
+        const allSegments = element.querySelectorAll('.aurora-underline-segment') as NodeListOf<HTMLElement>;
+        allSegments.forEach(s => s.style.opacity = '1.0');
+
+        // Trigger popover after 300ms
         hoverTimeout = setTimeout(() => {
           console.log('[AuroraWrite] Segment hover triggered for issue:', issue.id);
           if (this.onSegmentClick) {
@@ -105,15 +131,31 @@ export class UnderlineRenderer {
         }, 300);
       });
 
-      segment.addEventListener('mouseleave', () => {
+      hitArea.addEventListener('mouseleave', () => {
+        // Remove highlight from ALL hit areas and segments for this issue
+        const allHitAreas = element.querySelectorAll('.aurora-underline-hitarea') as NodeListOf<HTMLElement>;
+        allHitAreas.forEach(h => h.style.background = 'transparent');
+        const allSegments = element.querySelectorAll('.aurora-underline-segment') as NodeListOf<HTMLElement>;
+        allSegments.forEach(s => s.style.opacity = '0.65');
+
         if (hoverTimeout) {
           clearTimeout(hoverTimeout);
           hoverTimeout = null;
         }
       });
 
+      element.appendChild(hitArea);
       element.appendChild(segment);
     }
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return `rgba(0,0,0,${alpha})`;
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    return `rgba(${r},${g},${b},${alpha})`;
   }
 
   private getUnderlineStyle(style: string, color: string): string {
@@ -164,11 +206,10 @@ export class UnderlineRenderer {
 
   getUnderlineAt(x: number, y: number): TextIssue | null {
     for (const [_, underline] of this.underlines) {
-      const segments = underline.element.querySelectorAll('.aurora-underline-segment');
-      for (const segment of segments) {
-        const rect = segment.getBoundingClientRect();
-        const hitRect = new DOMRect(rect.x, rect.y - 10, rect.width, rect.height + 20);
-        if (x >= hitRect.left && x <= hitRect.right && y >= hitRect.top && y <= hitRect.bottom) {
+      const hitAreas = underline.element.querySelectorAll('.aurora-underline-hitarea');
+      for (const hitArea of hitAreas) {
+        const rect = hitArea.getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
           return underline.issue;
         }
       }
