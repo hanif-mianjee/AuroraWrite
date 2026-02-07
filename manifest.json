@@ -49,7 +49,8 @@
       "32": "src/assets/icons/icon32.png",
       "128": "src/assets/icons/icon128.png"
     },
-    "default_title": "AuroraWrite - AI Writing Assistant"
+    "default_title": "AuroraWrite - AI Writing Assistant",
+    "default_popup": "src/popup/index.html"
   },
   "homepage_url": "https://hanif-mianjee.github.io/AuroraWrite/"
 }
