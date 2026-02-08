@@ -136,7 +136,7 @@ Next steps:
 3. Create release:   gh release create v${newVersion} --generate-notes
 
 Or push everything:
-  git push origin main --tags
+  git push --follow-tags -f
 `);
 }
 
