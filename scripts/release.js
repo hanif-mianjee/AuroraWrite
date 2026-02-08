@@ -114,8 +114,8 @@ function main() {
   }
 
   // Build the extension
-  console.log('\nBuilding extension...');
-  exec('npm run build');
+  console.log('\nBuilding and packaging extension...');
+  exec('npm run package');
 
   // Git operations
   console.log('\nCommitting changes...');

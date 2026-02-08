@@ -169,10 +169,9 @@ BUILT FOR PERFORMANCE:
 
 WORKS EVERYWHERE:
 
-• Gmail, Google Docs, LinkedIn
-• Twitter/X, Facebook, Reddit
-• Notion, Slack, Discord
-• Any website with text input fields
+• Works on any website with text input fields
+• Supports both standard text areas and rich text editors
+• Automatically detects editable fields as you browse
 
 GETTING STARTED:
 
