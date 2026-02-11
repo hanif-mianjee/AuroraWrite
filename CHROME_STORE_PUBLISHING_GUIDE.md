@@ -144,14 +144,18 @@ PREMIUM FEATURES:
 • Text Transforms
   Select any text to rephrase, shorten, adjust tone, or translate with AI-powered transformations
 
-6+ AI PROVIDERS SUPPORTED:
+FLEXIBLE AI PROVIDER OPTIONS:
 
-• Groq - Ultra-fast inference with free tier (Recommended)
-• OpenAI - GPT-4 and GPT-3.5 models
-• Google Gemini - Great balance of speed and quality (Free tier)
-• Anthropic Claude - Excellent for nuanced writing
-• Together AI - Various open-source models (Free tier)
-• Mistral - Efficient multilingual models
+Choose from multiple AI providers to match your needs and budget:
+
+• Ultra-fast free inference for quick suggestions
+• Industry-leading language models for premium quality
+• Free tier options with generous daily limits
+• Multilingual support for global writing
+• Context-aware models for nuanced writing
+• Open-source and proprietary model choices
+
+Popular providers supported: Groq (free tier), OpenAI, Gemini (free tier), Claude, Together AI (free tier), and Mistral.
 
 BUILT FOR PERFORMANCE:
 
