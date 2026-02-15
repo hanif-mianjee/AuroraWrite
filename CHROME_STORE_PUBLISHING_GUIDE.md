@@ -150,12 +150,10 @@ Choose from multiple AI providers to match your needs and budget:
 
 • Ultra-fast free inference for quick suggestions
 • Industry-leading language models for premium quality
-• Free tier options with generous daily limits
+• Multiple providers offer generous free tiers
 • Multilingual support for global writing
 • Context-aware models for nuanced writing
 • Open-source and proprietary model choices
-
-Popular providers supported: Groq (free tier), OpenAI, Gemini (free tier), Claude, Together AI (free tier), and Mistral.
 
 BUILT FOR PERFORMANCE:
 
@@ -181,7 +179,7 @@ GETTING STARTED:
 
 1. Install the extension
 2. Open Settings and choose your AI provider
-3. Enter your API key (Groq offers a free tier!)
+3. Enter your API key (several providers offer free access)
 4. Start typing anywhere - suggestions appear automatically
 
 PERFECT FOR:
@@ -285,6 +283,8 @@ AuroraWrite's single purpose is to provide real-time writing assistance. The ext
 
 Each permission in your manifest requires a justification. Here are the justifications for AuroraWrite:
 
+**Note:** The extension uses content scripts with `<all_urls>` matching pattern declared in the manifest, which allows it to run automatically on all websites without needing the `activeTab` permission.
+
 #### `storage`
 **Justification:**
 ```
@@ -295,20 +295,6 @@ The storage permission is required to save user preferences and settings locally
 - Cache for analyzed text blocks to improve performance
 
 All data is stored locally on the user's device and is never transmitted to our servers.
-```
-
----
-
-#### `activeTab`
-**Justification:**
-```
-The activeTab permission is required to:
-- Detect text input fields on the current webpage
-- Read text content from input fields for analysis
-- Inject the writing assistant overlay UI to display suggestions
-- Apply corrections when users click on suggestions
-
-This permission ensures the extension only accesses the page when the user actively interacts with it, following the principle of least privilege.
 ```
 
 ---
