@@ -4,7 +4,7 @@
  */
 
 // Version is fetched from package.json via fetch or hardcoded
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 
 // Update version displays
 function updateVersionDisplays() {

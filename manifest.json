@@ -3,8 +3,8 @@
   "name": "AuroraWrite - Your Personal AI Writing Assistant",
   "short_name": "AuroraWrite",
   "description": "Your personal AI writing assistant with premium features. Real-time grammar, spelling, style suggestions. 6+ LLM providers.",
-  "version": "0.1.1",
-  "version_name": "0.1.1",
+  "version": "0.1.2",
+  "version_name": "0.1.2",
   "minimum_chrome_version": "116",
   "icons": {
     "16": "src/assets/icons/icon16.png",
